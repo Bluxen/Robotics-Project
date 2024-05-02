@@ -1,0 +1,38 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/robotics/dev_ws/install/usi_angry_turtle/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/thymio_example/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/thymio_assignment/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/assignment2/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/thymioid/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/thymio_driver/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/thymio_msgs/local/lib/python3.10/dist-packages",
+        "/home/robotics/dev_ws/install/project/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/robomaster_ros/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/robomaster_msgs/local/lib/python3.10/dist-packages",
+        "/home/robotics/dev_ws/install/ninja_turtle/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/first_package/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/custom_message/local/lib/python3.10/dist-packages",
+        "/home/robotics/dev_ws/install/asebaros_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/robotics/dev_ws/install/usi_angry_turtle/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/thymio_example/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/thymio_assignment/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/assignment2/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/thymioid/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/thymio_driver/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/thymio_msgs/local/lib/python3.10/dist-packages",
+        "/home/robotics/dev_ws/install/project/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/robomaster_ros/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/robomaster_msgs/local/lib/python3.10/dist-packages",
+        "/home/robotics/dev_ws/install/ninja_turtle/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/first_package/lib/python3.10/site-packages",
+        "/home/robotics/dev_ws/install/custom_message/local/lib/python3.10/dist-packages",
+        "/home/robotics/dev_ws/install/asebaros_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ]
+}

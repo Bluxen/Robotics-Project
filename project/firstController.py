@@ -65,7 +65,7 @@ class firstController(Node):
         self.time=3000
         self.current_theta=None
         self.current_z=None
-        self.angle_tolerance=0.05
+        self.angle_tolerance=0.01
         # self.angle_tolerance=0.002
         self.inPlace=False
 
@@ -75,12 +75,15 @@ class firstController(Node):
         # self.height=None
         # self.width=None
         self.helper_aruco=arucoHelper(logger = self.get_logger())
+        self.theta_target=np.pi
+        self.arucoSpotted=False
         
         
     def start(self): 
         print('subscription created')
         self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
-        
+        self.timer = self.create_timer(1/60, self.rotate_of_given_theta)
+        self.stopper = self.create_timer(3/60, self.stop_to_check)
         # self.get_camera_conf=self.create_subscription(CameraInfo, 'camera/camera_info', self.get_config, 10)
         
         # Create and immediately start a timer that will regularly publish commands
@@ -337,7 +340,7 @@ class firstController(Node):
             self.get_logger().info('\nNo aruco markers found\n')
         else:
             self.get_logger().info(f'\nAruco markers found\n')
-            self.get_logger().info(f'{ids}')
+            # self.get_logger().info(f'{ids}')
 
         # img=PIL.Image.fromarray(uint8_array).convert('RGB')
         # self.helper_aruco.drawImage(uint8_array, corners)
@@ -360,7 +363,42 @@ class firstController(Node):
         
     #     self.destroy_subscription(self.get_camera_conf)
         
+    def rotate_of_given_theta(self):
+        while not self.current_theta:
+            self.get_logger().info("Waiting a bit")
+            return
+        if self.arucoSpotted:
+            self.destroy_timer(self.timer)
+            self.destroy_timer(self.stopper)
+        if self.current_theta:
+            
+            
+            if not np.isclose(self.theta_target,self.current_theta,self.angle_tolerance):
+                self.get_logger().info(f'DISTANCE: {np.linalg.norm(np.array(self.theta_target)-np.array(self.current_theta))}')
+                if self.current_theta>self.theta_target:
+                    sign=- 1
+                else:
+                    sign = 1
 
+                if np.isclose(self.theta_target,self.current_theta,self.angle_tolerance+np.pi):
+                    self.get_logger().info("Rotating BUT CLOSE")
+                    z = sign*0.1
+                else:
+                    self.get_logger().info("Rotating NOT CLOSE")
+                    z = sign*0.3
+                
+                
+                self.move(0.0,0.0,z)
+                
+                return
+            else:
+                self.get_logger().info("FINISH ROTATING")
+        
+        # remove the timer to 
+        self.destroy_timer(self.timer)
+        self.destroy_timer(self.stopper)
+        self.inPlace=True
+        self.start()
     ###################################################
 
 

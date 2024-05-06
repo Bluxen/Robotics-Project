@@ -74,7 +74,7 @@ class firstController(Node):
 
         # self.height=None
         # self.width=None
-        self.helper_aruco=arucoHelper()
+        self.helper_aruco=arucoHelper(logger = self.get_logger())
         
         
     def start(self): 
@@ -324,23 +324,24 @@ class firstController(Node):
 
 
     def img_callback(self,msg):
-        print('new image')
-       
         uint8_array=np.asarray(msg.data)
         # print(uint8_array.shape)
         height, width=msg.height, msg.width
         uint8_array=uint8_array.reshape((height, width, 3))
-        print(type(uint8_array))
         
         # self.get_logger().info(f"{img}")
-        corners, ids, rejected_img_points=self.helper_aruco.getArucoPosition(uint8_array)
-        self.get_logger().info(f"{ids}")
-        if ids==None:
+        corners, ids, rejected_img_points = self.helper_aruco.getArucoPosition(uint8_array)
+        # self.get_logger().info(f"{rejected_img_points}")
+        # self.get_logger().info(f"{corners}")
+        if ids is None:
             self.get_logger().info('\nNo aruco markers found\n')
         else:
             self.get_logger().info(f'\nAruco markers found\n')
+            self.get_logger().info(f'{ids}')
 
         # img=PIL.Image.fromarray(uint8_array).convert('RGB')
+        # self.helper_aruco.drawImage(uint8_array, corners)
+
         # self.get_logger().info(f'TYPE: {type(img)}')
         # img.save(SHARE+"test.jpg","JPEG")
         # self.get_logger().info('SAVED')

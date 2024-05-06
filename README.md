@@ -14,5 +14,5 @@ colcon build --packages-select project
 
 source install/setup.bash
 
-ros2 launch project test.launch
+ros2 launch project test.launch.xml
 ```

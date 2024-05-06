@@ -5,6 +5,19 @@ import tf_transformations
 from geometry_msgs.msg import Twist, Pose
 from nav_msgs.msg import Odometry
 from  sensor_msgs.msg import Range
+from sensor_msgs.msg import Image,CameraInfo
+
+# NEW IMPORTS
+import PIL
+import numpy as np
+import cv2
+import os
+from cv2 import aruco
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from .arucoHelperclass import arucoHelper
+
 
 
 import sys
@@ -57,31 +70,45 @@ class firstController(Node):
 
         self.firstpart_inf=True
         self.secondpart_inf=False
+
+        # self.height=None
+        # self.width=None
+        self.helper_aruco=arucoHelper()
         
         
-    def start(self): pass
+    def start(self): 
+        print('subscription created')
+        self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
+        
+        # self.get_camera_conf=self.create_subscription(CameraInfo, 'camera/camera_info', self.get_config, 10)
+        
         # Create and immediately start a timer that will regularly publish commands
         # self.timer = self.create_timer(1/60, self.update_callback)
-        ####################### CHANGED  ##############################
+        print('I am in start')
+        ###################### CHANGED  ##############################
         
         # if self.time!=0:
         #     self.timer = self.create_timer(1/60, self.drawinf_callback)
-        # elif self.time==0 and not self.inPlace:
-        #     self.timer = self.create_timer(1/60, self.rotate_straight)
-        #     self.stopper = self.create_timer(2/60, self.stop_to_check)
+        # if self.time==0 and not self.inPlace:
+        # self.timer = self.create_timer(1/60, self.rotate_straight)
+        # self.stopper = self.create_timer(2/60, self.stop_to_check)
         # else:
             
-        #     self.timer = self.create_timer(1/60, self.update_callback)
-        #     # create the subscription to the proximity sensors
-        #     self.prox_sensor_center = self.create_subscription(Range, 'proximity/center', self.check_prox_c, 10)
-        #     self.prox_sensor_centerleft = self.create_subscription(Range, 'proximity/center_left', self.check_prox_cleft, 10)
-        #     self.prox_sensor_centerright = self.create_subscription(Range, 'proximity/center_right', self.check_prox_cright, 10)
-        #     self.prox_sensor_rearleft = self.create_subscription(Range, 'proximity/rear_left', self.check_prox_rleft, 10)
-        #     self.prox_sensor_rearright = self.create_subscription(Range, 'proximity/rear_right', self.check_prox_rright, 10)
+        # self.timer = self.create_timer(1/60, self.update_callback)
+            # create the subscription to the proximity sensors
+            # self.prox_sensor_center = self.create_subscription(Range, 'proximity/center', self.check_prox_c, 10)
+            # self.prox_sensor_centerleft = self.create_subscription(Range, 'proximity/center_left', self.check_prox_cleft, 10)
+            # self.prox_sensor_centerright = self.create_subscription(Range, 'proximity/center_right', self.check_prox_cright, 10)
+            # self.prox_sensor_rearleft = self.create_subscription(Range, 'proximity/rear_left', self.check_prox_rleft, 10)
+            # self.prox_sensor_rearright = self.create_subscription(Range, 'proximity/rear_right', self.check_prox_rright, 10)
             
-        #     self.isStopped=False
-        #     self.position_centered=False
-            
+        # self.isStopped=False
+        # self.position_centered=False
+
+        #create a subscription to the images
+        # print('subscription created')
+        # self.image_subscription = self.create_subscription(Image, '/camera/image_color', self.img_callback, 10)
+        
     
     def stop(self):
         # Set all velocities to zero
@@ -125,8 +152,9 @@ class firstController(Node):
         return pose2
         
     def update_callback(self):
+        print('in callback')
         self.cmd_vel = Twist() 
-        #########################################################
+        ########################################################
         
         # if self.state == 'MOVE_FORWARD':
         #     self.get_logger().info("I'm moving towards the wall", throttle_duration_sec = 1)
@@ -199,8 +227,8 @@ class firstController(Node):
         # elif self.state == 'ROTATE':
         #     self.cmd_vel.angular.z = 0.2
         
-        ##########################################################  
-        # Publish the command
+        # #########################################################  
+        # # Publish the command
         # self.vel_publisher.publish(self.cmd_vel)
         
 
@@ -247,26 +275,26 @@ class firstController(Node):
         
 
 
-    def drawinf_callback(self):
-        cmd_vel = Twist()
-        # self.get_logger().info("I'm doing the loop-the-loop", throttle_duration_sec = 1)
-        cmd_vel.linear.x  = 0.3 # [m/s]
-        if self.time>0:
-            if self.cnt % 700 == 0:
-                self.infty_toggle = not self.infty_toggle
+    # def drawinf_callback(self):
+    #     cmd_vel = Twist()
+    #     # self.get_logger().info("I'm doing the loop-the-loop", throttle_duration_sec = 1)
+    #     cmd_vel.linear.x  = 0.3 # [m/s]
+    #     if self.time>0:
+    #         if self.cnt % 700 == 0:
+    #             self.infty_toggle = not self.infty_toggle
                 
                 
-            if self.infty_toggle:
-                cmd_vel.angular.z = -1.57079632679
-            else:
-                cmd_vel.angular.z = 1.57079632679
-            self.vel_publisher.publish(cmd_vel)
-            self.cnt += 1
-            self.time-=1
-            return
+    #         if self.infty_toggle:
+    #             cmd_vel.angular.z = -1.57079632679
+    #         else:
+    #             cmd_vel.angular.z = 1.57079632679
+    #         self.vel_publisher.publish(cmd_vel)
+    #         self.cnt += 1
+    #         self.time-=1
+    #         return
         
-        self.destroy_timer(self.timer)
-        self.start()
+    #     self.destroy_timer(self.timer)
+    #     self.start()
 
         
     def check_prox_c(self, msg):
@@ -294,6 +322,45 @@ class firstController(Node):
         # self.get_logger().info("proximity rear right: received range data: {:.2f}".format(self.dist_rright), throttle_duration_sec = 0.5)
 
 
+    def img_callback(self,msg):
+        print('new image')
+       
+        uint8_array=np.asarray(msg.data)
+        # print(uint8_array.shape)
+        height, width=msg.height, msg.width
+        uint8_array=uint8_array.reshape((height, width, 3))
+        print(type(uint8_array))
+        
+        img=PIL.Image.fromarray(uint8_array).convert('RGB')
+        print(img)
+        corners, ids, rejected_img_points=self.helper_aruco.getArucoPosition(uint8_array)
+        print(ids)
+        if ids==None:
+            print('\nNo aruco markers found\n')
+        else:
+            print(f'\n Aruco markers found\n')
+        # print(f'TYPE: {type(img)}')
+        # img.save("./test.jpg","JPEG")
+        print('SAVED')
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        plt.imshow(img)
+        
+        #ax.axis('off')
+        plt.show()
+        
+
+    # def get_config(self,msg):
+    #     print('getting config')
+    #     self.height, self.width=msg.height, msg.width
+    #     print(self.height, self.width)
+    #     # print('ROI')
+    #     # print(msg.roi.height, msg.roi.width)
+    #     self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
+        
+    #     self.destroy_subscription(self.get_camera_conf)
+        
+
     ###################################################
 
 
@@ -303,6 +370,7 @@ def main():
     
     # Create an instance of your node class
     node = firstController()
+    print('starting the controller')
     node.start()
 
     

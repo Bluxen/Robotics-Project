@@ -18,7 +18,8 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from .arucoHelperclass import arucoHelper
 
-
+from ament_index_python.packages import get_package_share_directory
+SHARE = get_package_share_directory('project')+'/'
 
 import sys
 
@@ -331,20 +332,18 @@ class firstController(Node):
         uint8_array=uint8_array.reshape((height, width, 3))
         print(type(uint8_array))
         
-        img=PIL.Image.fromarray(uint8_array).convert('RGB')
-        print(img)
+        # self.get_logger().info(f"{img}")
         corners, ids, rejected_img_points=self.helper_aruco.getArucoPosition(uint8_array)
-        print(ids)
+        self.get_logger().info(f"{ids}")
         if ids==None:
-            print('\nNo aruco markers found\n')
+            self.get_logger().info('\nNo aruco markers found\n')
         else:
-            print(f'\n Aruco markers found\n')
-        # print(f'TYPE: {type(img)}')
-        # img.save("./test.jpg","JPEG")
-        print('SAVED')
-        fig = plt.figure()
-        ax = fig.add_subplot(1,1,1)
-        plt.imshow(img)
+            self.get_logger().info(f'\nAruco markers found\n')
+
+        # img=PIL.Image.fromarray(uint8_array).convert('RGB')
+        # self.get_logger().info(f'TYPE: {type(img)}')
+        # img.save(SHARE+"test.jpg","JPEG")
+        # self.get_logger().info('SAVED')
         
         #ax.axis('off')
         plt.show()

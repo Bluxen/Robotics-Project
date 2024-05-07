@@ -71,20 +71,26 @@ class firstController(Node):
 
         self.firstpart_inf=True
         self.secondpart_inf=False
+        self.sign=''
 
         # self.height=None
         # self.width=None
-        self.helper_aruco=arucoHelper(logger = self.get_logger())
-        self.theta_target=np.pi
-        self.arucoSpotted=False
+        self.helper_aruco = arucoHelper(logger = self.get_logger())
+        self.theta_target = 0.05
+        self.arucoSpotted = False
+        self.aligned = False
+        self.start_theta=None
+        self.aruco_ids_target:np.int32=55
         
         
     def start(self): 
-        print('subscription created')
-        self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
-        self.timer = self.create_timer(1/60, self.rotate_of_given_theta)
-        self.stopper = self.create_timer(3/60, self.stop_to_check)
-
+        if (not self.arucoSpotted):
+            self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
+            self.timer = self.create_timer(1/60, self.search_aruco)
+            self.stopper = self.create_timer(3/60, self.stop_to_check)
+        elif not self.aligned:
+            self.start_theta=self.current_theta
+            self.get_logger().info("DONE MY JOB, SEE YOU")
         # self.scan_timer_rotate = self.create_timer(1/60, lambda: self.move(0.,0.,0.1))
         # self.scan_timer_calibr = self.create_timer(3/60, lambda: self.move(0.,0.,0. ))
         # self.scan_timer_stop   = self.create_timer()
@@ -93,7 +99,6 @@ class firstController(Node):
         
         # Create and immediately start a timer that will regularly publish commands
         # self.timer = self.create_timer(1/60, self.update_callback)
-        print('I am in start')
         ###################### CHANGED  ##############################
         
         # if self.time!=0:
@@ -254,24 +259,47 @@ class firstController(Node):
         cmd_vel.angular.z = z_angular# [rad/s]
         self.vel_publisher.publish(cmd_vel)
         
-    def rotate_straight(self):
-        if self.current_theta:
+    # def rotate_straight(self):
+    #     if self.current_theta:
             
-            if abs(self.current_theta)>self.angle_tolerance:
+    #         if abs(self.current_theta)>self.angle_tolerance:
                 
-                # self.cmd_vel.linear.x  = 0.0 # [m/s]
-                # self.cmd_vel.linear.y  = 0.0 # [m/s]
-                if self.current_theta>0:
-                    sign=- 1
+    #             # self.cmd_vel.linear.x  = 0.0 # [m/s]
+    #             # self.cmd_vel.linear.y  = 0.0 # [m/s]
+    #             if self.current_theta > 0:
+    #                 sign = -1
+    #             else:
+    #                 sign = 1
+
+                   
+    #             z = sign*0.2
+    #             self.move(0.0,0.0,z)
+    #             return
+        
+    #     # remove the timer to 
+    #     self.destroy_timer(self.timer)
+    #     self.destroy_timer(self.stopper)
+    #     self.inPlace = True
+    #     self.start()
+        
+
+    def rotate_of_given_theta(self):
+        while not self.current_theta:
+            self.get_logger().info("Waiting a bit", throttle_duration_sec = 1)
+            return
+        if self.current_theta:
+            self.get_logger().info("Rotating", throttle_duration_sec = 1)
+
+            if not np.abs(self.current_theta- self.start_theta) > self.theta_target:
+
+                if self.sign == 'stop':
+                    sign = 0
+                elif self.sign == 'right':
+                    sign = -1
                 else:
                     sign = 1
 
-                if abs(self.current_theta)> 1:
-                    z = sign*0.5
-                else:
-                    z = sign* 0.2
-                
-                
+                z = sign* 0.2
                 self.move(0.0,0.0,z)
                 
                 return
@@ -281,29 +309,6 @@ class firstController(Node):
         self.destroy_timer(self.stopper)
         self.inPlace=True
         self.start()
-        
-
-
-    # def drawinf_callback(self):
-    #     cmd_vel = Twist()
-    #     # self.get_logger().info("I'm doing the loop-the-loop", throttle_duration_sec = 1)
-    #     cmd_vel.linear.x  = 0.3 # [m/s]
-    #     if self.time>0:
-    #         if self.cnt % 700 == 0:
-    #             self.infty_toggle = not self.infty_toggle
-                
-                
-    #         if self.infty_toggle:
-    #             cmd_vel.angular.z = -1.57079632679
-    #         else:
-    #             cmd_vel.angular.z = 1.57079632679
-    #         self.vel_publisher.publish(cmd_vel)
-    #         self.cnt += 1
-    #         self.time-=1
-    #         return
-        
-    #     self.destroy_timer(self.timer)
-    #     self.start()
 
         
     def check_prox_c(self, msg):
@@ -344,9 +349,23 @@ class firstController(Node):
         if ids is None:
             self.get_logger().info('\nNo aruco markers found\n')
         else:
+            self.arucoSpotted = True
             self.get_logger().info(f'\nAruco markers found\n')
+            self.get_logger().info("TARGET ID {}".format(self.aruco_ids_target))
+            ids_formatted=[id[0] for id in ids]
+            self.get_logger().info("IDS FORMATTED {}".format(ids_formatted))
+            # ids_formatted=ids_formatted[0]
+            self.get_logger().info("FOUND ID {}".format(type(ids_formatted)))
+            try:
+                i=list.index(ids_formatted, self.aruco_ids_target)
+                c=corners[i]
+                self.sign=self.helper_aruco.decideDirection(c)
+            except:
+                self.arucoSpotted = False
+                self.get_logger().info("FOUND FALSE ARUCO")
             self.helper_aruco.drawImage(uint8_array, corners)
             self.helper_aruco.drawImage(uint8_array, rejected_img_points)
+
             # self.get_logger().info(f'{ids}')
 
         # img=PIL.Image.fromarray(uint8_array).convert('RGB')
@@ -370,48 +389,38 @@ class firstController(Node):
         
     #     self.destroy_subscription(self.get_camera_conf)
         
-    def rotate_of_given_theta(self):
+    def search_aruco(self):
         while not self.current_theta:
             self.get_logger().info("Waiting a bit")
             return
+        
         if self.arucoSpotted:
+            self.get_logger().info("ARUCO SPOTTED")
+            self.move(0.0, 0.0, 0.0)
             self.destroy_timer(self.timer)
             self.destroy_timer(self.stopper)
+            self.start()
+            return
+        
         if self.current_theta:
             
-            
-            if not np.isclose(self.theta_target,self.current_theta,self.angle_tolerance):
-                self.get_logger().info(f'DISTANCE: {np.linalg.norm(np.array(self.theta_target)-np.array(self.current_theta))}')
-                if self.current_theta>self.theta_target:
-                    sign=- 1
-                else:
-                    sign = 1
+            # if not np.isclose(self.theta_target,self.current_theta,self.angle_tolerance):
+            if True:
+                # self.get_logger().info(f'DISTANCE: {np.linalg.norm(np.array(self.theta_target) - np.array(self.current_theta))}')
 
-                if np.isclose(self.theta_target,self.current_theta,self.angle_tolerance+np.pi):
-                    self.get_logger().info("Rotating BUT CLOSE")
-                    z = sign*0.1
-                else:
-                    self.get_logger().info("Rotating NOT CLOSE")
-                    z = sign*0.3
+                z = 0.1
                 
-                
-                self.move(0.0,0.0,z)
+                self.move(0.0, 0.0, z)
                 
                 return
-            else:
-                self.get_logger().info("FINISH ROTATING")
-        
-        # remove the timer to 
-        self.destroy_timer(self.timer)
-        self.destroy_timer(self.stopper)
-        self.inPlace=True
-        self.start()
+
     ###################################################
 
 
 def main():
     # Initialize the ROS client library
     rclpy.init(args=sys.argv)
+    os.environ["XDG_SESSION_TYPE"] = "xcb"
     
     # Create an instance of your node class
     node = firstController()

@@ -84,6 +84,11 @@ class firstController(Node):
         self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
         self.timer = self.create_timer(1/60, self.rotate_of_given_theta)
         self.stopper = self.create_timer(3/60, self.stop_to_check)
+
+        # self.scan_timer_rotate = self.create_timer(1/60, lambda: self.move(0.,0.,0.1))
+        # self.scan_timer_calibr = self.create_timer(3/60, lambda: self.move(0.,0.,0. ))
+        # self.scan_timer_stop   = self.create_timer()
+        
         # self.get_camera_conf=self.create_subscription(CameraInfo, 'camera/camera_info', self.get_config, 10)
         
         # Create and immediately start a timer that will regularly publish commands
@@ -340,10 +345,12 @@ class firstController(Node):
             self.get_logger().info('\nNo aruco markers found\n')
         else:
             self.get_logger().info(f'\nAruco markers found\n')
+            self.helper_aruco.drawImage(uint8_array, corners)
+            self.helper_aruco.drawImage(uint8_array, rejected_img_points)
             # self.get_logger().info(f'{ids}')
 
         # img=PIL.Image.fromarray(uint8_array).convert('RGB')
-        # self.helper_aruco.drawImage(uint8_array, corners)
+        
 
         # self.get_logger().info(f'TYPE: {type(img)}')
         # img.save(SHARE+"test.jpg","JPEG")

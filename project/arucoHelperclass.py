@@ -71,8 +71,8 @@ class arucoHelper():
             cv2.line(image, bottomR, bottomL, (0, 255, 0), 1)
             cv2.line(image, topL, topR, (0, 255, 0), 1)
 
-        centers=self.getAllArUcoCenter(len(squares),corners)
-        for c in centers:
-            cv2.circle(image, (c[0], c[0]), 4, (0, 0, 255), -1)
+        # centers=self.getAllArUcoCenter(squares,corners)
+        # for c in centers:
+        #     cv2.circle(image, (c[0], c[0]), 4, (0, 0, 255), -1)
         cv2.imshow("Image", image)
         cv2.waitKey(0)

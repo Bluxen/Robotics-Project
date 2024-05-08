@@ -30,19 +30,19 @@ class arucoHelper():
         corners, ids, rejected_img_points = self.detector.detectMarkers(image)
         return corners, ids, rejected_img_points
     
-    def getArUcoCentre(self, aruco_id, corners):
+    def getArUcoCentre(self, corners):
         # get the centre x value
-        topL, topR, bottomR, bottomL= corners[0]
+        topL, topR, bottomR, bottomL = corners
         # topL, topR, bottomR, bottomL=tuple(topL), tuple(topR), tuple(bottomR), tuple(bottomL)
         centre_x=(((topL[0]+ topR[0])/2.0)+(bottomR[0]+ bottomL[0])/2.0)/2.0
         centre_y=(((topL[0]+ bottomL[0])/2.0)+(bottomR[0]+ topR[0])/2.0)/2.0
-        return [centre_x,centre_y]
+        return [int(centre_x),int(centre_y)]
 
     def getAllArUcoCenter(self, ids, corners):
         centres=[]
         for i,id in enumerate(ids):
             coners_current_ArUco=corners[i][0]
-            centre=self.getArUcoCentre(id,coners_current_ArUco)
+            centre=self.getArUcoCentre(coners_current_ArUco)
             centres.append(centre)
         return centres
     
@@ -63,20 +63,27 @@ class arucoHelper():
         return 'left'
 
     def drawImage(self, image, squares):
+        """ UNUSED """
         for square in squares:
-            corners = square[0]
-            
-            topL,topR,bottomR,bottomL=[np.array(corner, dtype=int) for corner in corners]
-            
-            cv2.line(image, bottomL, topL, (0, 255, 0), 1)
-            cv2.line(image, topR, bottomR, (0, 255, 0), 1)
-            cv2.line(image, bottomR, bottomL, (0, 255, 0), 1)
-            cv2.line(image, topL, topR, (0, 255, 0), 1)
+            image = self.draw_square(image, square)
 
-        # centers=self.getAllArUcoCenter(squares,corners)
-        # for c in centers:
-        #     cv2.circle(image, (c[0], c[0]), 4, (0, 0, 255), -1)
         plt.show()
         cv2.imshow("Image", image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+
+
+    def draw_square(self, image, square, color=(0, 255, 0)):
+        corners = square[0]
+            
+        topL,topR,bottomR,bottomL=[np.array(corner, dtype=int) for corner in corners]
+            
+        cv2.line(image, bottomL, topL, color, 1)
+        cv2.line(image, topR, bottomR, color, 1)
+        cv2.line(image, bottomR, bottomL, color, 1)
+        cv2.line(image, topL, topR, color, 1)
+
+        # c = self.getArUcoCentre(corners)
+        # cv2.circle(image, (c[0], c[0]), 4, (0, 0, 255), -1)
+
+        return image

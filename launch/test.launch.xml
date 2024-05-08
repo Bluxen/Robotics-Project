@@ -19,6 +19,7 @@
   
   <group scoped="true">
     <include file="$(find-pkg-share robomaster_ros)/launch/ep.launch">
+      <!-- <arg name="video_resolution" value="320"/> -->
       <arg name="name" value="$(var name_rm)"/>
       <arg name="device" value="$(var device)"/>
       <arg name="simulation" value="$(var simulation)"/>

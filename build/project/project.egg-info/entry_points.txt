@@ -1,0 +1,3 @@
+[console_scripts]
+firstController = project.firstController:main
+

@@ -1,0 +1,44 @@
+[0.350s] Invoking command in '/home/robotics/dev_ws/src/Robotics-Project': PYTHONPATH=/home/robotics/dev_ws/src/Robotics-Project/build/project/prefix_override:/home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base build/project build --build-base /home/robotics/dev_ws/src/Robotics-Project/build/project/build install --record /home/robotics/dev_ws/src/Robotics-Project/build/project/install.log --single-version-externally-managed
+[0.479s] running egg_info
+[0.479s] creating build/project/project.egg-info
+[0.479s] writing build/project/project.egg-info/PKG-INFO
+[0.479s] writing dependency_links to build/project/project.egg-info/dependency_links.txt
+[0.479s] writing entry points to build/project/project.egg-info/entry_points.txt
+[0.479s] writing requirements to build/project/project.egg-info/requires.txt
+[0.479s] writing top-level names to build/project/project.egg-info/top_level.txt
+[0.479s] writing manifest file 'build/project/project.egg-info/SOURCES.txt'
+[0.480s] reading manifest file 'build/project/project.egg-info/SOURCES.txt'
+[0.481s] writing manifest file 'build/project/project.egg-info/SOURCES.txt'
+[0.481s] running build
+[0.481s] running build_py
+[0.481s] creating /home/robotics/dev_ws/src/Robotics-Project/build/project/build
+[0.481s] creating /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib
+[0.481s] creating /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project
+[0.481s] copying project/arucoHelperclass.py -> /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project
+[0.481s] copying project/firstController.py -> /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project
+[0.481s] copying project/__init__.py -> /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project
+[0.482s] running install
+[0.482s] /usr/lib/python3/dist-packages/setuptools/command/install.py:34: SetuptoolsDeprecationWarning: setup.py install is deprecated. Use build and pip and other standards-based tools.
+[0.482s]   warnings.warn(
+[0.482s] running install_lib
+[0.482s] creating /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project
+[0.483s] copying /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project/arucoHelperclass.py -> /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project
+[0.483s] copying /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project/firstController.py -> /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project
+[0.483s] copying /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project/__init__.py -> /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project
+[0.483s] byte-compiling /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project/arucoHelperclass.py to arucoHelperclass.cpython-310.pyc
+[0.483s] byte-compiling /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project/firstController.py to firstController.cpython-310.pyc
+[0.484s] byte-compiling /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project/__init__.py to __init__.cpython-310.pyc
+[0.484s] running install_data
+[0.484s] creating /home/robotics/dev_ws/src/Robotics-Project/install/project/share/ament_index
+[0.484s] creating /home/robotics/dev_ws/src/Robotics-Project/install/project/share/ament_index/resource_index
+[0.485s] creating /home/robotics/dev_ws/src/Robotics-Project/install/project/share/ament_index/resource_index/packages
+[0.485s] copying resource/project -> /home/robotics/dev_ws/src/Robotics-Project/install/project/share/ament_index/resource_index/packages
+[0.485s] copying package.xml -> /home/robotics/dev_ws/src/Robotics-Project/install/project/share/project
+[0.485s] creating /home/robotics/dev_ws/src/Robotics-Project/install/project/share/project/launch
+[0.485s] copying launch/test.launch.xml -> /home/robotics/dev_ws/src/Robotics-Project/install/project/share/project/launch
+[0.485s] running install_egg_info
+[0.485s] Copying build/project/project.egg-info to /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project-0.0.0-py3.10.egg-info
+[0.486s] running install_scripts
+[0.497s] Installing firstController script to /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/project
+[0.497s] writing list of installed files to '/home/robotics/dev_ws/src/Robotics-Project/build/project/install.log'
+[0.515s] Invoked command in '/home/robotics/dev_ws/src/Robotics-Project' returned '0': PYTHONPATH=/home/robotics/dev_ws/src/Robotics-Project/build/project/prefix_override:/home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base build/project build --build-base /home/robotics/dev_ws/src/Robotics-Project/build/project/build install --record /home/robotics/dev_ws/src/Robotics-Project/build/project/install.log --single-version-externally-managed

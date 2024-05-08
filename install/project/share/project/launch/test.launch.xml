@@ -25,12 +25,12 @@
       <arg name="servo" value="true"/>
     
       <!-- new -->
-      <!-- <arg name="sensor_adapter" value="true"/>
+      <arg name="sensor_adapter" value="true"/>
       <arg name="tof_0" value="true"/>
 
       <arg name="tof_1" value="true"/>
       <arg name="tof_2" value="true"/>
-      <arg name="tof_3" value="true"/> -->
+      <arg name="tof_3" value="true"/>
     </include>
   </group>
 </launch>

@@ -48,12 +48,12 @@ class firstController(Node):
         self.infty_toggle = False
         self.min_distance=1.0
 
-        # self.dist_centre=float('inf')
-        # self.dist_cleft=float('inf')
-        # self.dist_cright=float('inf')
+        self.dist_centre=float('inf')
+        self.dist_cleft=float('inf')
+        self.dist_cright=float('inf')
 
-        # self.dist_rleft = float('inf')
-        # self.dist_rright = float('inf')
+        self.dist_rleft = float('inf')
+        self.dist_rright = float('inf')
         self.tolerance = 0.05
         self.align_counter = 0
 
@@ -84,18 +84,12 @@ class firstController(Node):
         
         
     def start(self): 
-        self.get_logger().info('I am back in start')
-        if not self.arucoSpotted:
-            self.get_logger().info('Start spotting')
+        if (not self.arucoSpotted):
             self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
             self.timer = self.create_timer(1/60, self.search_aruco)
             self.stopper = self.create_timer(3/60, self.stop_to_check)
         elif not self.aligned:
-            self.get_logger().info('Time to align')
             self.start_theta=self.current_theta
-            self.timer = self.create_timer(1/60, self.rotate_of_given_theta)
-            self.stopper = self.create_timer(3/60, self.stop_to_check)
-        else:
             self.get_logger().info("DONE MY JOB, SEE YOU")
         # self.scan_timer_rotate = self.create_timer(1/60, lambda: self.move(0.,0.,0.1))
         # self.scan_timer_calibr = self.create_timer(3/60, lambda: self.move(0.,0.,0. ))
@@ -293,65 +287,53 @@ class firstController(Node):
         while not self.current_theta:
             self.get_logger().info("Waiting a bit", throttle_duration_sec = 1)
             return
-        
-        self.get_logger().info("Rotating to align")
-        
-        # if not np.abs(self.current_theta- self.start_theta) > self.theta_target:
-        if self.sign == 'stop':
-            self.move(0.0,0.0,0.0)
-            # now that we are aligned, no aruco is found
-            self.move(0.0,0.0,0.0)
-            self.aligned=True
-            self.get_logger().info('aligned')
-            self.destroy_timer(self.timer)
-            self.destroy_timer(self.stopper)
-            self.start()
-            return
+        if self.current_theta:
+            self.get_logger().info("Rotating", throttle_duration_sec = 1)
 
-        elif self.sign == 'left':
-            self.aligned=False
-            self.get_logger().info('left')
-            sign = 1
-        else:
-            self.aligned=False
-            self.get_logger().info('right')
-            sign =-1
+            if not np.abs(self.current_theta- self.start_theta) > self.theta_target:
 
-        z = sign* 0.2
-        self.get_logger().info(f'moving of: {z}')
-        self.move(0.0,0.0,z)
-            
+                if self.sign == 'stop':
+                    sign = 0
+                elif self.sign == 'right':
+                    sign = -1
+                else:
+                    sign = 1
+
+                z = sign* 0.2
+                self.move(0.0,0.0,z)
+                
+                return
         
-        # # remove the timer to 
-        # self.destroy_timer(self.timer)
-        # self.destroy_timer(self.stopper)
-        # self.inPlace=True
-        # self.start()
+        # remove the timer to 
+        self.destroy_timer(self.timer)
+        self.destroy_timer(self.stopper)
+        self.inPlace=True
+        self.start()
 
         
-    # def check_prox_c(self, msg):
-    #     self.dist_centre = msg.range
-    #     # self.get_logger().info("proximity center: received range data: {:.2f}".format(self.dist_centre), throttle_duration_sec = 0.5)
+    def check_prox_c(self, msg):
+        self.dist_centre = msg.range
+        # self.get_logger().info("proximity center: received range data: {:.2f}".format(self.dist_centre), throttle_duration_sec = 0.5)
 
 
-    # def check_prox_cleft(self, msg):
-    #     self.dist_cleft = msg.range
-    #     # self.get_logger().info("proximity center left: received range data: {:.2f}".format(self.dist_cleft), throttle_duration_sec = 0.5)
+    def check_prox_cleft(self, msg):
+        self.dist_cleft = msg.range
+        # self.get_logger().info("proximity center left: received range data: {:.2f}".format(self.dist_cleft), throttle_duration_sec = 0.5)
         
 
-    # def check_prox_cright(self, msg):
-    #     self.dist_cright = msg.range
-    #     # self.get_logger().info("proximity center right: received range data: {:.2f}".format(self.dist_cright), throttle_duration_sec = 0.5)
+    def check_prox_cright(self, msg):
+        self.dist_cright = msg.range
+        # self.get_logger().info("proximity center right: received range data: {:.2f}".format(self.dist_cright), throttle_duration_sec = 0.5)
 
 
-    # def check_prox_rleft(self, msg):
-    #     self.dist_rleft = msg.range
-    #     # self.get_logger().info("proximity rear left: received range data: {:.2f}".format(self.dist_rleft), throttle_duration_sec = 0.5)
+    def check_prox_rleft(self, msg):
+        self.dist_rleft = msg.range
+        # self.get_logger().info("proximity rear left: received range data: {:.2f}".format(self.dist_rleft), throttle_duration_sec = 0.5)
 
 
-    # def check_prox_rright(self, msg):
-    #     self.dist_rright = msg.range
-    #     # self.get_logger().info("proximity rear right: received range data: {:.2f}".format(self.dist_rright), throttle_duration_sec = 0.5)
+    def check_prox_rright(self, msg):
+        self.dist_rright = msg.range
+        # self.get_logger().info("proximity rear right: received range data: {:.2f}".format(self.dist_rright), throttle_duration_sec = 0.5)
 
 
     def img_callback(self,msg):
@@ -365,27 +347,20 @@ class firstController(Node):
         # self.get_logger().info(f"{rejected_img_points}")
         # self.get_logger().info(f"{corners}")
         if ids is None:
-            if self.arucoSpotted:
-                # in case the aruco marker is spotted but at this moment we cannot see it because it is covered
-                # by the gripper, we keep on going with the values we have
-                return
             self.get_logger().info('\nNo aruco markers found\n')
         else:
             self.arucoSpotted = True
             self.get_logger().info(f'\nAruco markers found\n')
             self.get_logger().info("TARGET ID {}".format(self.aruco_ids_target))
             id=[id[0] for id in ids if id[0]==self.aruco_ids_target]
-            # self.get_logger().info("ID {}".format(id))
+            self.get_logger().info("ID {}".format(id))
             # ids_formatted=ids_formatted[0]
-            
+            self.get_logger().info("FOUND ID {}".format(ids==self.aruco_ids_target))
             try:
-                # the index method returns a particular exception if none of the ids is the correct one
-                i=list.index(ids.tolist(), [self.aruco_ids_target])
-                self.get_logger().info("FOUND AT {}".format(corners[i]))
+                i=list.index(ids, [self.aruco_ids_target])
                 c=corners[i]
                 self.sign=self.helper_aruco.decideDirection(c)
-                self.get_logger().info("it is time to go: {}".format(self.sign))
-            except ValueError as v:
+            except:
                 self.arucoSpotted = False
                 self.get_logger().info("FOUND FALSE ARUCO")
             self.helper_aruco.drawImage(uint8_array, corners)
@@ -401,6 +376,7 @@ class firstController(Node):
         # self.get_logger().info('SAVED')
         
         #ax.axis('off')
+        plt.show()
         
 
     # def get_config(self,msg):

@@ -2,9 +2,10 @@ import rclpy
 from rclpy.node import Node
 import tf_transformations
 
-from geometry_msgs.msg import Twist, Pose
+from geometry_msgs.msg import Twist, Pose, Vector3
+from robomaster_msgs.msg import GripperState
 from nav_msgs.msg import Odometry
-from  sensor_msgs.msg import Range
+from sensor_msgs.msg import Range
 from sensor_msgs.msg import Image,CameraInfo
 
 # NEW IMPORTS
@@ -38,6 +39,10 @@ class firstController(Node):
         # Create a subscriber to the topic 'odom', which will call 
         # self.odom_callback every time a message is received
         self.odom_subscriber = self.create_subscription(Odometry, 'odom', self.odom_callback, 10)
+
+        self.arm_publisher = self.create_publisher(Vector3, 'cmd_arm', 10)
+
+        self.gripper_publisher = self.create_publisher(GripperState, 'gripper', 10)
         
         # NOTE: we're using relative names to specify the topics (i.e., without a 
         # leading /). ROS resolves relative names by concatenating them with the 
@@ -45,9 +50,9 @@ class firstController(Node):
         # specify which Thymio should be controlled.
 
         ################## CHANGED ########################
-        self.cnt=0
+        self.cnt = 0
         self.infty_toggle = False
-        self.min_distance=1.0
+        self.min_distance = 1.0
         self.tolerance = 0.05
         self.align_counter = 0
 
@@ -56,29 +61,30 @@ class firstController(Node):
 
         # variables to pass from exercise 1 to 2
         # self.time=1600
-        self.time=3000
-        self.current_theta=None
-        self.current_z=None
-        self.angle_tolerance=0.01
+        self.time = 3000
+        self.current_theta = None
+        self.current_z = None
+        self.angle_tolerance = 0.01
         # self.angle_tolerance=0.002
-        self.inPlace=False
+        self.inPlace = False
 
-        self.firstpart_inf=True
-        self.secondpart_inf=False
-        self.sign=''
+        self.firstpart_inf = True
+        self.secondpart_inf = False
+        self.sign = ''
 
         self.helper_aruco = arucoHelper(logger = self.get_logger())
         self.theta_target = 0.05
         self.arucoSpotted = False
         self.aligned = False
-        self.start_theta=None
-        self.aruco_ids_target:int=55
+        self.start_theta = None
+        self.aruco_ids_target:int = 55
 
         self.image_publisher = self.create_publisher(Image, "debug_img", 10)
         self.vs = VS(320, 640)
         
     def start(self): 
         self.get_logger().info('I am back in start')
+        self.move_arm(0.1, 0.0, 0.1)
         if not self.arucoSpotted:
             self.get_logger().info('Start spotting')
             self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
@@ -86,7 +92,7 @@ class firstController(Node):
             # self.stopper = self.create_timer(10/60, self.stop_to_check)
         elif not self.aligned:
             self.get_logger().info('Time to align')
-            self.start_theta=self.current_theta
+            self.start_theta = self.current_theta
             self.timer = self.create_timer(1/60, self.rotate_of_given_theta)
             # self.stopper = self.create_timer(10/60, self.stop_to_check)
         else:
@@ -136,9 +142,9 @@ class firstController(Node):
         pose2d = self.pose3d_to_2d(self.odom_pose)
         ###################################
        
-        _,_,self.current_theta=pose2d
-        self.current_z=self.odom_valocity
-        self.current_theta=round(self.current_theta,6)
+        _,_,self.current_theta = pose2d
+        self.current_z = self.odom_valocity
+        self.current_theta = round(self.current_theta,6)
         
         ###################################
         
@@ -250,13 +256,13 @@ class firstController(Node):
     ###################################################
     ################## NEW METHODS ####################
     def stop_to_check(self):
-        self.move(0.0,0.0,0.0)
+        self.move(0.0, 0.0, 0.0)
 
-    def move(self,x_linear=0.0,y_linear=0.0, z_angular=0.0):
+    def move(self, x_linear = 0.0, y_linear = 0.0, z_angular = 0.0):
         cmd_vel = Twist() 
-        cmd_vel.linear.x  = x_linear # [m/s]
-        cmd_vel.angular.y = y_linear# [rad/s]
-        cmd_vel.angular.z = z_angular# [rad/s]
+        cmd_vel.linear.x = x_linear # [m/s]
+        cmd_vel.linear.y = y_linear # [m/s]
+        cmd_vel.angular.z = z_angular # [rad/s]
         self.vel_publisher.publish(cmd_vel)
         
     # def rotate_straight(self):
@@ -295,7 +301,7 @@ class firstController(Node):
             self.move(0.0,0.0,0.0)
             # now that we are aligned, no aruco is found
             self.move(0.0,0.0,0.0)
-            self.aligned=True
+            self.aligned = True
             self.get_logger().info('aligned')
             self.destroy_timer(self.timer)
             # self.destroy_timer(self.stopper)
@@ -303,23 +309,23 @@ class firstController(Node):
             return
 
         elif self.sign == 'left':
-            self.aligned=False
+            self.aligned = False
             self.get_logger().info('left')
             sign = 1
         else:
-            self.aligned=False
+            self.aligned = False
             self.get_logger().info('right')
             sign =-1
 
-        z = sign* 0.2
+        z = sign * 0.2
         self.get_logger().info(f'moving of: {z}')
         self.move(0.0,0.0,z)
 
     def img_callback(self,msg):
-        uint8_array=np.asarray(msg.data)
+        uint8_array = np.asarray(msg.data)
         # print(uint8_array.shape)
-        height, width=msg.height, msg.width
-        uint8_array=uint8_array.reshape((height, width, 3))
+        height, width = msg.height, msg.width
+        uint8_array = uint8_array.reshape((height, width, 3))
         
         # self.get_logger().info(f"{img}")
         corners, ids, rejected_img_points = self.helper_aruco.getArucoPosition(uint8_array)
@@ -349,9 +355,9 @@ class firstController(Node):
             
             try:
                 # the index method returns a particular exception if none of the ids is the correct one
-                i=list.index(ids.tolist(), [self.aruco_ids_target])
+                i = list.index(ids.tolist(), [self.aruco_ids_target])
                 self.get_logger().info("FOUND AT {}".format(corners[i]))
-                c=corners[i]
+                c = corners[i]
                 self.sign=self.helper_aruco.decideDirection(c)
                 self.get_logger().info("it is time to go: {}".format(self.sign))
             except ValueError as v:
@@ -412,13 +418,34 @@ class firstController(Node):
     def publish_image(self, mat: np.ndarray, msg: Image):
         arr = np.reshape(mat, -1)
         msg.data = arr.tolist()
-
         self.image_publisher.publish(msg)
+
+
+    def open_gripper(self):
+        self.get_logger().info("Opening gripper")
+        # not working
+        state = GripperState(state=GripperState.OPEN)
+        self.gripper_publisher.publish(state)
+
+
+    def close_gripper(self):
+        self.get_logger().info("Closing gripper")
+        # not working 
+        state = GripperState(state=GripperState.CLOSE)
+        self.gripper_publisher.publish(state)
+
+
+    def move_arm(self, forwards_backwards = 0.0, up_down = 0.0):
+        self.get_logger().info("Moving arm")
+        arm_vel = Vector3()
+        arm_vel.x = forwards_backwards
+        arm_vel.z = up_down
+        self.arm_publisher.publish(arm_vel)
 
 
 def main():
     # Initialize the ROS client library
-    rclpy.init(args=sys.argv)
+    rclpy.init(args = sys.argv)
     os.environ["XDG_SESSION_TYPE"] = "xcb"
     
     # Create an instance of your node class

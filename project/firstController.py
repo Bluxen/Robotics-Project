@@ -1,9 +1,12 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.action.client import ActionClient
 import tf_transformations
+import time
 
 from geometry_msgs.msg import Twist, Pose, Vector3
 from robomaster_msgs.msg import GripperState
+from robomaster_msgs.action import GripperControl
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Range
 from sensor_msgs.msg import Image,CameraInfo
@@ -41,8 +44,6 @@ class firstController(Node):
         self.odom_subscriber = self.create_subscription(Odometry, 'odom', self.odom_callback, 10)
 
         self.arm_publisher = self.create_publisher(Vector3, 'cmd_arm', 10)
-
-        self.gripper_publisher = self.create_publisher(GripperState, 'gripper', 10)
         
         # NOTE: we're using relative names to specify the topics (i.e., without a 
         # leading /). ROS resolves relative names by concatenating them with the 
@@ -81,22 +82,35 @@ class firstController(Node):
 
         self.image_publisher = self.create_publisher(Image, "debug_img", 10)
         self.vs = VS(320, 640)
+
+        self.gap = ActionClient(self, GripperControl, 'gripper')
         
     def start(self): 
+        self.get_logger().info('Waiting for gripper server')
+        self.gap.wait_for_server(None)
+        self.get_logger().info('Closing gripper')
+        self.close_gripper()
+        self.get_logger().info('Closed gripper')
+        # self.move_arm(0.1, 0.0)
+
         self.get_logger().info('I am back in start')
-        self.move_arm(0.1, 0.0, 0.1)
-        if not self.arucoSpotted:
-            self.get_logger().info('Start spotting')
-            self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
-            self.timer = self.create_timer(1/60, self.search_aruco)
-            # self.stopper = self.create_timer(10/60, self.stop_to_check)
-        elif not self.aligned:
-            self.get_logger().info('Time to align')
-            self.start_theta = self.current_theta
-            self.timer = self.create_timer(1/60, self.rotate_of_given_theta)
-            # self.stopper = self.create_timer(10/60, self.stop_to_check)
-        else:
-            self.get_logger().info("DONE MY JOB, SEE YOU")
+        
+        # if not self.arucoSpotted:
+        #     self.get_logger().info('Start spotting')
+        #     self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
+        #     self.timer = self.create_timer(1/60, self.search_aruco)
+        #     # self.stopper = self.create_timer(10/60, self.stop_to_check)
+        # elif not self.aligned:
+        #     self.get_logger().info('Time to align')
+        #     self.start_theta = self.current_theta
+        #     self.timer = self.create_timer(1/60, self.rotate_of_given_theta)
+        #     # self.stopper = self.create_timer(10/60, self.stop_to_check)
+        # else:
+        #     self.get_logger().info("DONE MY JOB, SEE YOU")
+
+
+
+
         # self.scan_timer_rotate = self.create_timer(1/60, lambda: self.move(0.,0.,0.1))
         # self.scan_timer_calibr = self.create_timer(3/60, lambda: self.move(0.,0.,0. ))
         # self.scan_timer_stop   = self.create_timer()
@@ -420,20 +434,16 @@ class firstController(Node):
         msg.data = arr.tolist()
         self.image_publisher.publish(msg)
 
-
     def open_gripper(self):
-        self.get_logger().info("Opening gripper")
-        # not working
-        state = GripperState(state=GripperState.OPEN)
-        self.gripper_publisher.publish(state)
+        # self.get_logger().info("Opening gripper")
+        result = self.gap.send_goal(GripperControl.Goal(target_state=GripperState.OPEN))
+        # time.sleep(1.5)
 
 
     def close_gripper(self):
-        self.get_logger().info("Closing gripper")
-        # not working 
-        state = GripperState(state=GripperState.CLOSE)
-        self.gripper_publisher.publish(state)
-
+        # self.get_logger().info("Closing gripper")
+        result = self.gap.send_goal(GripperControl.Goal(target_state=GripperState.CLOSE))
+        # time.sleep(1.5)
 
     def move_arm(self, forwards_backwards = 0.0, up_down = 0.0):
         self.get_logger().info("Moving arm")

@@ -72,18 +72,19 @@ class arucoHelper():
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-
-    def draw_square(self, image, square, color=(0, 255, 0)):
-        corners = square[0]
+    def draw_markers(self, image, markers, ids, color=(0, 255, 0)):
+        # corners = square[0]
             
-        topL,topR,bottomR,bottomL=[np.array(corner, dtype=int) for corner in corners]
-            
-        cv2.line(image, bottomL, topL, color, 1)
-        cv2.line(image, topR, bottomR, color, 1)
-        cv2.line(image, bottomR, bottomL, color, 1)
-        cv2.line(image, topL, topR, color, 1)
+        # topL,topR,bottomR,bottomL=[np.array(corner, dtype=int) for corner in corners]
 
-        # c = self.getArUcoCentre(corners)
-        # cv2.circle(image, (c[0], c[0]), 4, (0, 0, 255), -1)
+        aruco.drawDetectedMarkers(image, markers, ids, color)
+            
+        # cv2.line(image, bottomL, topL, color, 1)
+        # cv2.line(image, topR, bottomR, color, 1)
+        # cv2.line(image, bottomR, bottomL, color, 1)
+        # cv2.line(image, topL, topR, color, 1)
+
+        # # c = self.getArUcoCentre(corners)
+        # # cv2.circle(image, (c[0], c[0]), 4, (0, 0, 255), -1)
 
         return image

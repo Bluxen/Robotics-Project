@@ -14,7 +14,7 @@ setup(
         # Instruct colcon to copy launch files during package build 
         ('share/' + package_name + '/launch', glob('launch/*.launch.*'))
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'cv_bridge'],
     zip_safe=True,
     maintainer='robotics',
     maintainer_email='robotics@todo.todo',
@@ -23,7 +23,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'firstController = project.firstController:main'
+            'firstController = project.firstController:main',
+            'calibrate = project.calibrate:main'
         ],
     },
 )

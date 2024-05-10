@@ -17,6 +17,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from .arucoHelperclass import arucoHelper
+from .visualServoing import VS
 
 from ament_index_python.packages import get_package_share_directory
 SHARE = get_package_share_directory('project')+'/'
@@ -74,7 +75,7 @@ class firstController(Node):
         self.aruco_ids_target:int=55
 
         self.image_publisher = self.create_publisher(Image, "debug_img", 10)
-        
+        self.vs = VS(320, 640)
         
     def start(self): 
         self.get_logger().info('I am back in start')
@@ -325,8 +326,9 @@ class firstController(Node):
         # self.get_logger().info(f"{rejected_img_points}")
         # self.get_logger().info(f"{corners}")
 
-        for square in corners:
-            uint8_array = self.helper_aruco.draw_square(uint8_array, square)
+        if ids is not None:
+            uint8_array = self.helper_aruco.draw_markers(uint8_array, corners, ids)
+            uint8_array = self.vs.draw_pose(uint8_array, corners, ids, 0.05)
         # for square in rejected_img_points:
         #     uint8_array = self.helper_aruco.draw_square(uint8_array, square, (255, 0, 0))
         self.publish_image(uint8_array, msg)

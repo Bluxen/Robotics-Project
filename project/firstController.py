@@ -442,7 +442,14 @@ class firstController(Node):
 
     def close_gripper(self):
         # self.get_logger().info("Closing gripper")
-        result = self.gap.send_goal(GripperControl.Goal(target_state=GripperState.CLOSE))
+        self.get_logger().info('in method')
+        
+        result=None
+        while result is None:
+            self.get_logger().info('start')
+            result=self.gap.send_goal_async(GripperControl.Goal(target_state=GripperState.CLOSE))
+            self.get_logger().info('Waiting for results')
+        
         # time.sleep(1.5)
 
     def move_arm(self, forwards_backwards = 0.0, up_down = 0.0):

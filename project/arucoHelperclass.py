@@ -14,7 +14,7 @@ class arucoHelper():
         self.dictionary=cv2.aruco.getPredefinedDictionary(dictionary_to_use)
         self.parameters = cv2.aruco.DetectorParameters()
         self.detector = cv2.aruco.ArucoDetector(self.dictionary, self.parameters)
-        self.tolerance_centre=0.05
+        self.tolerance_centre=0.0
 
     def log(self, str):
         if self.logger is not None:
@@ -32,10 +32,10 @@ class arucoHelper():
     
     def getArUcoCentre(self, corners):
         # get the centre x value
-        topL, topR, bottomR, bottomL = corners
+        topL, topR, bottomR, bottomL = corners[0]
         # topL, topR, bottomR, bottomL=tuple(topL), tuple(topR), tuple(bottomR), tuple(bottomL)
         centre_x=(((topL[0]+ topR[0])/2.0)+(bottomR[0]+ bottomL[0])/2.0)/2.0
-        centre_y=(((topL[0]+ bottomL[0])/2.0)+(bottomR[0]+ topR[0])/2.0)/2.0
+        centre_y=(((topL[1]+ bottomL[1])/2.0)+(bottomR[1]+ topR[1])/2.0)/2.0
         return [int(centre_x),int(centre_y)]
 
     def getAllArUcoCenter(self, ids, corners):

@@ -76,5 +76,15 @@ class VS():
             derivative = 0
         self.last_e = e
         self.sum_e += e * self.dt # NEW
-        print(f'Turning of {self.Kp * e + self.Kd * derivative + self.Ki * self.sum_e}')
+        # print(f'Turning of {self.Kp * e + self.Kd * derivative + self.Ki * self.sum_e}')
         return np.clip(self.Kp * e + self.Kd * derivative + self.Ki * self.sum_e, -1.5, +1.5)
+    
+
+    def decideTurning(self, aruco_centre_x, coords_x):
+        if np.isclose(aruco_centre_x,coords_x, 0.01):
+            return 'stop'
+        elif aruco_centre_x>coords_x:
+            return 'left'
+        return 'right'
+
+        pass

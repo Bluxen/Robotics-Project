@@ -95,11 +95,11 @@ class firstController(Node):
 
         self.get_logger().info('I am back in start')
         
-        # if not self.arucoSpotted:
-        #     self.get_logger().info('Start spotting')
-        #     self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
-        #     self.timer = self.create_timer(1/60, self.search_aruco)
-        #     # self.stopper = self.create_timer(10/60, self.stop_to_check)
+        if not self.arucoSpotted:
+            self.get_logger().info('Start spotting')
+            self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
+            self.timer = self.create_timer(1/60, self.search_aruco)
+            # self.stopper = self.create_timer(10/60, self.stop_to_check)
         # elif not self.aligned:
         #     self.get_logger().info('Time to align')
         #     self.start_theta = self.current_theta

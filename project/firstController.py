@@ -85,6 +85,7 @@ class firstController(Node):
         self.aruco_centre=0.0
         self.gap = ActionClient(self, GripperControl, 'gripper')
         self.velocity=0.2
+        self.moving=False
         
     def start(self): 
         self.get_logger().info('Waiting for gripper server')
@@ -96,7 +97,12 @@ class firstController(Node):
 
         self.get_logger().info('I am back in start')
         
-        if not self.arucoSpotted:
+        if self.moving:
+            # else:
+            self.move_arm(0.05, -0.08)
+            self.get_logger().info("DONE MY JOB, SEE YOU")
+        elif not self.arucoSpotted:
+            self.move_arm(0.03, -0.001)
             self.get_logger().info('Start spotting')
             self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
             self.timer = self.create_timer(1/60, self.search_aruco)
@@ -106,9 +112,11 @@ class firstController(Node):
             self.start_theta = self.current_theta
             self.timer = self.create_timer(1/60, self.rotate_of_given_theta)
             self.stopper = self.create_timer(50/60, self.stop_to_check)
-        else:
-            self.timer = self.create_timer(1/60, self.move_forward)
-            self.get_logger().info("DONE MY JOB, SEE YOU")
+        elif not self.moving:
+            self.moving=True
+            self.timer_fw = self.create_timer(1/60, self.move_forward)
+        # else:
+        #     self.get_logger().info("DONE MY JOB, SEE YOU")
 
 
 
@@ -324,12 +332,13 @@ class firstController(Node):
         if self.sign == 'stop':
             self.move(0.0,0.0,0.0)
             # now that we are aligned, no aruco is found
-            self.move(0.0,0.0,0.0)
+            # self.move(0.0,0.0,0.0)
             self.aligned = True
             self.get_logger().info('aligned')
             # self.destroy_timer(self.timer)
             # self.destroy_timer(self.stopper)
             self.start()
+            sign=0
             return
 
         elif self.sign == 'left':
@@ -341,7 +350,7 @@ class firstController(Node):
             self.get_logger().info('right')
             sign =1
 
-        self.velocity=(self.vs.step(error)/10.0)
+        self.velocity=(self.vs.step(error)/1.0)
         z = sign * self.velocity
         self.get_logger().info(f'moving of: {z}')
         self.move(0.0,0.0,z)
@@ -366,8 +375,16 @@ class firstController(Node):
         
         if ids is None:
             if self.arucoSpotted:
+                self.get_logger().info('\nSTOP RIGHT NOW\n')
                 # in case the aruco marker is spotted but at this moment we cannot see it because it is covered
                 # by the gripper, we keep on going with the values we have
+                self.arucoSpotted=False
+                self.destroy_timer(self.timer_fw)
+                self.move(0.0,0.0,0.0)
+                self.destroy_timer(self.timer)
+                # self.destroy_timer(self.stopper)
+                self.start()
+                
                 return
             self.get_logger().info('\nNo aruco markers found\n')
         else:
@@ -386,7 +403,6 @@ class firstController(Node):
                 # self.sign=self.helper_aruco.decideDirection(c)
                 self.get_logger().info("it is time to go: {}".format(self.sign))
                 self.aruco_centre=self.helper_aruco.getArUcoCentre(c)
-                print(f'centre established:{self.aruco_centre}')
                 self.sign=self.vs.decideTurning(self.aruco_centre[0], self.width/2.0)
             except ValueError as v:
                 self.arucoSpotted = False
@@ -474,7 +490,7 @@ class firstController(Node):
         self.arm_publisher.publish(arm_vel)
 
     def move_forward(self):
-        self.get_logger().info("I'm moving towards the wall", throttle_duration_sec = 1)
+        self.get_logger().info("I'm moving forward", throttle_duration_sec = 1)
         self.move(self.velocity,0.0,0.0)
         # if (self.dist_centre > -1 and self.dist_centre < self.min_distance):
         #     self.cmd_vel.linear.x  = 0.0

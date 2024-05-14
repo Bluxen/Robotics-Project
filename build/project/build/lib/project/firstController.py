@@ -1,10 +1,14 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.action.client import ActionClient
 import tf_transformations
+import time
 
-from geometry_msgs.msg import Twist, Pose
+from geometry_msgs.msg import Twist, Pose, Vector3
+from robomaster_msgs.msg import GripperState
+from robomaster_msgs.action import GripperControl
 from nav_msgs.msg import Odometry
-from  sensor_msgs.msg import Range
+from sensor_msgs.msg import Range
 from sensor_msgs.msg import Image,CameraInfo
 
 # NEW IMPORTS
@@ -17,6 +21,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from .arucoHelperclass import arucoHelper
+from .visualServoing import VS
 
 from ament_index_python.packages import get_package_share_directory
 SHARE = get_package_share_directory('project')+'/'
@@ -37,6 +42,8 @@ class firstController(Node):
         # Create a subscriber to the topic 'odom', which will call 
         # self.odom_callback every time a message is received
         self.odom_subscriber = self.create_subscription(Odometry, 'odom', self.odom_callback, 10)
+
+        self.arm_publisher = self.create_publisher(Vector3, 'cmd_arm', 10)
         
         # NOTE: we're using relative names to specify the topics (i.e., without a 
         # leading /). ROS resolves relative names by concatenating them with the 
@@ -44,16 +51,9 @@ class firstController(Node):
         # specify which Thymio should be controlled.
 
         ################## CHANGED ########################
-        self.cnt=0
+        self.cnt = 0
         self.infty_toggle = False
-        self.min_distance=1.0
-
-        self.dist_centre=float('inf')
-        self.dist_cleft=float('inf')
-        self.dist_cright=float('inf')
-
-        self.dist_rleft = float('inf')
-        self.dist_rright = float('inf')
+        self.min_distance = 1.0
         self.tolerance = 0.05
         self.align_counter = 0
 
@@ -62,35 +62,57 @@ class firstController(Node):
 
         # variables to pass from exercise 1 to 2
         # self.time=1600
-        self.time=3000
-        self.current_theta=None
-        self.current_z=None
-        self.angle_tolerance=0.01
+        self.time = 3000
+        self.current_theta = None
+        self.current_z = None
+        self.angle_tolerance = 0.01
         # self.angle_tolerance=0.002
-        self.inPlace=False
+        self.inPlace = False
 
-        self.firstpart_inf=True
-        self.secondpart_inf=False
-        self.sign=''
+        self.firstpart_inf = True
+        self.secondpart_inf = False
+        self.sign = ''
 
-        # self.height=None
-        # self.width=None
         self.helper_aruco = arucoHelper(logger = self.get_logger())
         self.theta_target = 0.05
         self.arucoSpotted = False
         self.aligned = False
-        self.start_theta=None
-        self.aruco_ids_target:int=55
-        
+        self.start_theta = None
+        self.aruco_ids_target:int = 55
+
+        self.image_publisher = self.create_publisher(Image, "debug_img", 10)
+        self.vs = VS(320, 640)
+        self.aruco_centre=0.0
+        self.gap = ActionClient(self, GripperControl, 'gripper')
+        self.velocity=0.2
         
     def start(self): 
-        if (not self.arucoSpotted):
+        self.get_logger().info('Waiting for gripper server')
+        self.gap.wait_for_server(None)
+        self.get_logger().info('Closing gripper')
+        # self.close_gripper()
+        self.get_logger().info('Closed gripper')
+        # self.move_arm(0.1, 0.0)
+
+        self.get_logger().info('I am back in start')
+        
+        if not self.arucoSpotted:
+            self.get_logger().info('Start spotting')
             self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
             self.timer = self.create_timer(1/60, self.search_aruco)
-            self.stopper = self.create_timer(3/60, self.stop_to_check)
+            # self.stopper = self.create_timer(10/60, self.stop_to_check)
         elif not self.aligned:
-            self.start_theta=self.current_theta
+            self.get_logger().info('Time to align')
+            self.start_theta = self.current_theta
+            self.timer = self.create_timer(1/60, self.rotate_of_given_theta)
+            self.stopper = self.create_timer(50/60, self.stop_to_check)
+        else:
+            self.timer = self.create_timer(1/60, self.move_forward)
             self.get_logger().info("DONE MY JOB, SEE YOU")
+
+
+
+
         # self.scan_timer_rotate = self.create_timer(1/60, lambda: self.move(0.,0.,0.1))
         # self.scan_timer_calibr = self.create_timer(3/60, lambda: self.move(0.,0.,0. ))
         # self.scan_timer_stop   = self.create_timer()
@@ -136,9 +158,9 @@ class firstController(Node):
         pose2d = self.pose3d_to_2d(self.odom_pose)
         ###################################
        
-        _,_,self.current_theta=pose2d
-        self.current_z=self.odom_valocity
-        self.current_theta=round(self.current_theta,6)
+        _,_,self.current_theta = pose2d
+        self.current_z = self.odom_valocity
+        self.current_theta = round(self.current_theta,6)
         
         ###################################
         
@@ -250,13 +272,13 @@ class firstController(Node):
     ###################################################
     ################## NEW METHODS ####################
     def stop_to_check(self):
-        self.move(0.0,0.0,0.0)
+        self.move(0.0, 0.0, 0.0)
 
-    def move(self,x_linear=0.0,y_linear=0.0, z_angular=0.0):
+    def move(self, x_linear = 0.0, y_linear = 0.0, z_angular = 0.0):
         cmd_vel = Twist() 
-        cmd_vel.linear.x  = x_linear # [m/s]
-        cmd_vel.angular.y = y_linear# [rad/s]
-        cmd_vel.angular.z = z_angular# [rad/s]
+        cmd_vel.linear.x = x_linear # [m/s]
+        cmd_vel.linear.y = y_linear # [m/s]
+        cmd_vel.angular.z = z_angular # [rad/s]
         self.vel_publisher.publish(cmd_vel)
         
     # def rotate_straight(self):
@@ -287,84 +309,90 @@ class firstController(Node):
         while not self.current_theta:
             self.get_logger().info("Waiting a bit", throttle_duration_sec = 1)
             return
-        if self.current_theta:
-            self.get_logger().info("Rotating", throttle_duration_sec = 1)
-
-            if not np.abs(self.current_theta- self.start_theta) > self.theta_target:
-
-                if self.sign == 'stop':
-                    sign = 0
-                elif self.sign == 'right':
-                    sign = -1
-                else:
-                    sign = 1
-
-                z = sign* 0.2
-                self.move(0.0,0.0,z)
-                
-                return
         
-        # remove the timer to 
-        self.destroy_timer(self.timer)
-        self.destroy_timer(self.stopper)
-        self.inPlace=True
-        self.start()
-
+        self.get_logger().info("Rotating to align")
         
-    def check_prox_c(self, msg):
-        self.dist_centre = msg.range
-        # self.get_logger().info("proximity center: received range data: {:.2f}".format(self.dist_centre), throttle_duration_sec = 0.5)
-
-
-    def check_prox_cleft(self, msg):
-        self.dist_cleft = msg.range
-        # self.get_logger().info("proximity center left: received range data: {:.2f}".format(self.dist_cleft), throttle_duration_sec = 0.5)
+        # error = np.arctan2(np.sin(self.theta_target-self.current_theta), np.cos(self.theta_target-self.current_theta)) 
         
-
-    def check_prox_cright(self, msg):
-        self.dist_cright = msg.range
-        # self.get_logger().info("proximity center right: received range data: {:.2f}".format(self.dist_cright), throttle_duration_sec = 0.5)
-
-
-    def check_prox_rleft(self, msg):
-        self.dist_rleft = msg.range
-        # self.get_logger().info("proximity rear left: received range data: {:.2f}".format(self.dist_rleft), throttle_duration_sec = 0.5)
+        error = np.arctan2(np.sin(self.aruco_centre[0]-self.width/2.0), np.cos(self.aruco_centre[0]-self.width/2.0)) 
+        
+        error=error%1.57
+        # self.theta_target = self.vs.step(error)
 
 
-    def check_prox_rright(self, msg):
-        self.dist_rright = msg.range
-        # self.get_logger().info("proximity rear right: received range data: {:.2f}".format(self.dist_rright), throttle_duration_sec = 0.5)
+        # if not np.abs(self.current_theta- self.start_theta) > self.theta_target:
+        if self.sign == 'stop':
+            self.move(0.0,0.0,0.0)
+            # now that we are aligned, no aruco is found
+            self.move(0.0,0.0,0.0)
+            self.aligned = True
+            self.get_logger().info('aligned')
+            # self.destroy_timer(self.timer)
+            # self.destroy_timer(self.stopper)
+            self.start()
+            return
 
+        elif self.sign == 'left':
+            self.aligned = False
+            self.get_logger().info('left')
+            sign = -1
+        else:
+            self.aligned = False
+            self.get_logger().info('right')
+            sign =1
+
+        self.velocity=(self.vs.step(error)/10.0)
+        z = sign * self.velocity
+        self.get_logger().info(f'moving of: {z}')
+        self.move(0.0,0.0,z)
 
     def img_callback(self,msg):
-        uint8_array=np.asarray(msg.data)
+        uint8_array = np.asarray(msg.data)
         # print(uint8_array.shape)
-        height, width=msg.height, msg.width
-        uint8_array=uint8_array.reshape((height, width, 3))
+        self.height, self.width = msg.height, msg.width
+        uint8_array = uint8_array.reshape((self.height, self.width, 3))
         
         # self.get_logger().info(f"{img}")
         corners, ids, rejected_img_points = self.helper_aruco.getArucoPosition(uint8_array)
         # self.get_logger().info(f"{rejected_img_points}")
         # self.get_logger().info(f"{corners}")
+
+        if ids is not None:
+            uint8_array = self.helper_aruco.draw_markers(uint8_array, corners, ids)
+            uint8_array = self.vs.draw_pose(uint8_array, corners, ids, 0.05)
+        # for square in rejected_img_points:
+        #     uint8_array = self.helper_aruco.draw_square(uint8_array, square, (255, 0, 0))
+        self.publish_image(uint8_array, msg)
+        
         if ids is None:
+            if self.arucoSpotted:
+                # in case the aruco marker is spotted but at this moment we cannot see it because it is covered
+                # by the gripper, we keep on going with the values we have
+                return
             self.get_logger().info('\nNo aruco markers found\n')
         else:
             self.arucoSpotted = True
             self.get_logger().info(f'\nAruco markers found\n')
             self.get_logger().info("TARGET ID {}".format(self.aruco_ids_target))
-            id=[id[0] for id in ids if id[0]==self.aruco_ids_target]
-            self.get_logger().info("ID {}".format(id))
+            # id=[id[0] for id in ids if id[0]==self.aruco_ids_target]
+            # self.get_logger().info("ID {}".format(id))
             # ids_formatted=ids_formatted[0]
-            self.get_logger().info("FOUND ID {}".format(ids==self.aruco_ids_target))
+            
             try:
-                i=list.index(ids, [self.aruco_ids_target])
-                c=corners[i]
-                self.sign=self.helper_aruco.decideDirection(c)
-            except:
+                # the index method returns a particular exception if none of the ids is the correct one
+                i = list.index(ids.tolist(), [self.aruco_ids_target])
+                self.get_logger().info("FOUND AT {}".format(corners[i]))
+                c = corners[i]
+                # self.sign=self.helper_aruco.decideDirection(c)
+                self.get_logger().info("it is time to go: {}".format(self.sign))
+                self.aruco_centre=self.helper_aruco.getArUcoCentre(c)
+                print(f'centre established:{self.aruco_centre}')
+                self.sign=self.vs.decideTurning(self.aruco_centre[0], self.width/2.0)
+            except ValueError as v:
                 self.arucoSpotted = False
                 self.get_logger().info("FOUND FALSE ARUCO")
-            self.helper_aruco.drawImage(uint8_array, corners)
-            self.helper_aruco.drawImage(uint8_array, rejected_img_points)
+            # self.helper_aruco.drawImage(uint8_array, corners)
+            # self.helper_aruco.drawImage(uint8_array, rejected_img_points)
 
             # self.get_logger().info(f'{ids}')
 
@@ -376,7 +404,6 @@ class firstController(Node):
         # self.get_logger().info('SAVED')
         
         #ax.axis('off')
-        plt.show()
         
 
     # def get_config(self,msg):
@@ -398,7 +425,7 @@ class firstController(Node):
             self.get_logger().info("ARUCO SPOTTED")
             self.move(0.0, 0.0, 0.0)
             self.destroy_timer(self.timer)
-            self.destroy_timer(self.stopper)
+            # self.destroy_timer(self.stopper)
             self.start()
             return
         
@@ -416,10 +443,47 @@ class firstController(Node):
 
     ###################################################
 
+    def publish_image(self, mat: np.ndarray, msg: Image):
+        arr = np.reshape(mat, -1)
+        msg.data = arr.tolist()
+        self.image_publisher.publish(msg)
+
+    def open_gripper(self):
+        # self.get_logger().info("Opening gripper")
+        result = self.gap.send_goal(GripperControl.Goal(target_state=GripperState.OPEN))
+        # time.sleep(1.5)
+
+
+    def close_gripper(self):
+        # self.get_logger().info("Closing gripper")
+        self.get_logger().info('in method')
+        
+        result=None
+        while result is None:
+            self.get_logger().info('start')
+            result=self.gap.send_goal_async(GripperControl.Goal(target_state=GripperState.CLOSE))
+            self.get_logger().info('Waiting for results')
+        
+        # time.sleep(1.5)
+
+    def move_arm(self, forwards_backwards = 0.0, up_down = 0.0):
+        self.get_logger().info("Moving arm")
+        arm_vel = Vector3()
+        arm_vel.x = forwards_backwards
+        arm_vel.z = up_down
+        self.arm_publisher.publish(arm_vel)
+
+    def move_forward(self):
+        self.get_logger().info("I'm moving towards the wall", throttle_duration_sec = 1)
+        self.move(self.velocity,0.0,0.0)
+        # if (self.dist_centre > -1 and self.dist_centre < self.min_distance):
+        #     self.cmd_vel.linear.x  = 0.0
+        #     self.state = 'ALIGN'
+
 
 def main():
     # Initialize the ROS client library
-    rclpy.init(args=sys.argv)
+    rclpy.init(args = sys.argv)
     os.environ["XDG_SESSION_TYPE"] = "xcb"
     
     # Create an instance of your node class

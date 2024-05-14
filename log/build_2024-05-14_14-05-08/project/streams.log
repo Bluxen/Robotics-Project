@@ -1,0 +1,37 @@
+[0.351s] Invoking command in '/home/robotics/dev_ws/src/Robotics-Project': PYTHONPATH=/home/robotics/dev_ws/src/Robotics-Project/build/project/prefix_override:/home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base build/project build --build-base /home/robotics/dev_ws/src/Robotics-Project/build/project/build install --record /home/robotics/dev_ws/src/Robotics-Project/build/project/install.log --single-version-externally-managed
+[0.482s] running egg_info
+[0.483s] writing build/project/project.egg-info/PKG-INFO
+[0.483s] writing dependency_links to build/project/project.egg-info/dependency_links.txt
+[0.483s] writing entry points to build/project/project.egg-info/entry_points.txt
+[0.484s] writing requirements to build/project/project.egg-info/requires.txt
+[0.484s] writing top-level names to build/project/project.egg-info/top_level.txt
+[0.485s] reading manifest file 'build/project/project.egg-info/SOURCES.txt'
+[0.486s] writing manifest file 'build/project/project.egg-info/SOURCES.txt'
+[0.486s] running build
+[0.486s] running build_py
+[0.486s] copying project/arucoHelperclass.py -> /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project
+[0.486s] copying project/firstController.py -> /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project
+[0.487s] copying project/visualServoing.py -> /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project
+[0.487s] copying project/calibrate.py -> /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project
+[0.487s] running install
+[0.487s] /usr/lib/python3/dist-packages/setuptools/command/install.py:34: SetuptoolsDeprecationWarning: setup.py install is deprecated. Use build and pip and other standards-based tools.
+[0.487s]   warnings.warn(
+[0.487s] running install_lib
+[0.487s] copying /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project/arucoHelperclass.py -> /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project
+[0.488s] copying /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project/firstController.py -> /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project
+[0.488s] copying /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project/visualServoing.py -> /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project
+[0.488s] copying /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/project/calibrate.py -> /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project
+[0.488s] byte-compiling /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project/arucoHelperclass.py to arucoHelperclass.cpython-310.pyc
+[0.489s] byte-compiling /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project/firstController.py to firstController.cpython-310.pyc
+[0.490s] byte-compiling /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project/visualServoing.py to visualServoing.cpython-310.pyc
+[0.490s] byte-compiling /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project/calibrate.py to calibrate.cpython-310.pyc
+[0.491s] running install_data
+[0.491s] copying launch/calibrate.launch.xml -> /home/robotics/dev_ws/src/Robotics-Project/install/project/share/project/launch
+[0.492s] running install_egg_info
+[0.493s] removing '/home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project-0.0.0-py3.10.egg-info' (and everything under it)
+[0.493s] Copying build/project/project.egg-info to /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project-0.0.0-py3.10.egg-info
+[0.493s] running install_scripts
+[0.505s] Installing calibrate script to /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/project
+[0.505s] Installing firstController script to /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/project
+[0.505s] writing list of installed files to '/home/robotics/dev_ws/src/Robotics-Project/build/project/install.log'
+[0.521s] Invoked command in '/home/robotics/dev_ws/src/Robotics-Project' returned '0': PYTHONPATH=/home/robotics/dev_ws/src/Robotics-Project/build/project/prefix_override:/home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base build/project build --build-base /home/robotics/dev_ws/src/Robotics-Project/build/project/build install --record /home/robotics/dev_ws/src/Robotics-Project/build/project/install.log --single-version-externally-managed

@@ -9,10 +9,13 @@ build/project/project.egg-info/entry_points.txt
 build/project/project.egg-info/requires.txt
 build/project/project.egg-info/top_level.txt
 build/project/project.egg-info/zip-safe
+launch/calibrate.launch.xml
 launch/test.launch.xml
 project/__init__.py
 project/arucoHelperclass.py
+project/calibrate.py
 project/firstController.py
+project/visualServoing.py
 resource/project
 test/test_copyright.py
 test/test_flake8.py

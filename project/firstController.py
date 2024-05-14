@@ -82,14 +82,15 @@ class firstController(Node):
 
         self.image_publisher = self.create_publisher(Image, "debug_img", 10)
         self.vs = VS(320, 640)
-
+        self.aruco_centre=0.0
         self.gap = ActionClient(self, GripperControl, 'gripper')
+        self.velocity=0.2
         
     def start(self): 
         self.get_logger().info('Waiting for gripper server')
         self.gap.wait_for_server(None)
         self.get_logger().info('Closing gripper')
-        self.close_gripper()
+        # self.close_gripper()
         self.get_logger().info('Closed gripper')
         # self.move_arm(0.1, 0.0)
 
@@ -100,13 +101,14 @@ class firstController(Node):
             self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
             self.timer = self.create_timer(1/60, self.search_aruco)
             # self.stopper = self.create_timer(10/60, self.stop_to_check)
-        # elif not self.aligned:
-        #     self.get_logger().info('Time to align')
-        #     self.start_theta = self.current_theta
-        #     self.timer = self.create_timer(1/60, self.rotate_of_given_theta)
-        #     # self.stopper = self.create_timer(10/60, self.stop_to_check)
-        # else:
-        #     self.get_logger().info("DONE MY JOB, SEE YOU")
+        elif not self.aligned:
+            self.get_logger().info('Time to align')
+            self.start_theta = self.current_theta
+            self.timer = self.create_timer(1/60, self.rotate_of_given_theta)
+            self.stopper = self.create_timer(50/60, self.stop_to_check)
+        else:
+            self.timer = self.create_timer(1/60, self.move_forward)
+            self.get_logger().info("DONE MY JOB, SEE YOU")
 
 
 
@@ -310,6 +312,14 @@ class firstController(Node):
         
         self.get_logger().info("Rotating to align")
         
+        # error = np.arctan2(np.sin(self.theta_target-self.current_theta), np.cos(self.theta_target-self.current_theta)) 
+        
+        error = np.arctan2(np.sin(self.aruco_centre[0]-self.width/2.0), np.cos(self.aruco_centre[0]-self.width/2.0)) 
+        
+        error=error%1.57
+        # self.theta_target = self.vs.step(error)
+
+
         # if not np.abs(self.current_theta- self.start_theta) > self.theta_target:
         if self.sign == 'stop':
             self.move(0.0,0.0,0.0)
@@ -317,7 +327,7 @@ class firstController(Node):
             self.move(0.0,0.0,0.0)
             self.aligned = True
             self.get_logger().info('aligned')
-            self.destroy_timer(self.timer)
+            # self.destroy_timer(self.timer)
             # self.destroy_timer(self.stopper)
             self.start()
             return
@@ -325,21 +335,22 @@ class firstController(Node):
         elif self.sign == 'left':
             self.aligned = False
             self.get_logger().info('left')
-            sign = 1
+            sign = -1
         else:
             self.aligned = False
             self.get_logger().info('right')
-            sign =-1
+            sign =1
 
-        z = sign * 0.2
+        self.velocity=(self.vs.step(error)/10.0)
+        z = sign * self.velocity
         self.get_logger().info(f'moving of: {z}')
         self.move(0.0,0.0,z)
 
     def img_callback(self,msg):
         uint8_array = np.asarray(msg.data)
         # print(uint8_array.shape)
-        height, width = msg.height, msg.width
-        uint8_array = uint8_array.reshape((height, width, 3))
+        self.height, self.width = msg.height, msg.width
+        uint8_array = uint8_array.reshape((self.height, self.width, 3))
         
         # self.get_logger().info(f"{img}")
         corners, ids, rejected_img_points = self.helper_aruco.getArucoPosition(uint8_array)
@@ -372,8 +383,11 @@ class firstController(Node):
                 i = list.index(ids.tolist(), [self.aruco_ids_target])
                 self.get_logger().info("FOUND AT {}".format(corners[i]))
                 c = corners[i]
-                self.sign=self.helper_aruco.decideDirection(c)
+                # self.sign=self.helper_aruco.decideDirection(c)
                 self.get_logger().info("it is time to go: {}".format(self.sign))
+                self.aruco_centre=self.helper_aruco.getArUcoCentre(c)
+                print(f'centre established:{self.aruco_centre}')
+                self.sign=self.vs.decideTurning(self.aruco_centre[0], self.width/2.0)
             except ValueError as v:
                 self.arucoSpotted = False
                 self.get_logger().info("FOUND FALSE ARUCO")
@@ -458,6 +472,13 @@ class firstController(Node):
         arm_vel.x = forwards_backwards
         arm_vel.z = up_down
         self.arm_publisher.publish(arm_vel)
+
+    def move_forward(self):
+        self.get_logger().info("I'm moving towards the wall", throttle_duration_sec = 1)
+        self.move(self.velocity,0.0,0.0)
+        # if (self.dist_centre > -1 and self.dist_centre < self.min_distance):
+        #     self.cmd_vel.linear.x  = 0.0
+        #     self.state = 'ALIGN'
 
 
 def main():

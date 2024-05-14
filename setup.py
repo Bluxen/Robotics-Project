@@ -5,7 +5,7 @@ package_name = 'project'
 setup(
     name=package_name,
     version='0.0.0',
-    packages=[package_name],
+    packages=[package_name,'rm'],
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -24,7 +24,8 @@ setup(
     entry_points={
         'console_scripts': [
             'firstController = project.firstController:main',
-            'calibrate = project.calibrate:main'
+            'calibrate = project.calibrate:main',
+            'vs = rm.node:main'
         ],
     },
 )

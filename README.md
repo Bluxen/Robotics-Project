@@ -6,6 +6,12 @@
 3. Start the simulation with the real-time mode toggle enabled
 
 ### How to run
+This project requires the `opencv-contrib-python` library, but the `opencv-python` library might already be installed.
+To fix this, run:
+```
+pip3 uninstall opencv-python
+pip3 install opencv-contrib-python
+```
 Compile the code with these commands: 
 ```
 cd ~/dev_ws

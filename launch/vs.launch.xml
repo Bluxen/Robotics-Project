@@ -1,0 +1,28 @@
+
+<launch>
+  <!-- Create a launch argument. It can be used to supply values on the command line, 
+       with the following syntax: ros2 launch <package_name> <launch_file> thymio_name:=thymio1 -->
+  <arg name="name_rm" default="RM"/>
+  <arg name="name_th" default="thymio_0"/>
+  <arg name="device" default="tcp:host=localhost;port=33333"/>
+  <arg name="simulation" default="True"/>
+
+  <node pkg="project" exec="vs" namespace="$(var name_rm)" output='screen' />
+
+  <group scoped="true">
+    <include file="$(find-pkg-share thymioid)/launch/main.launch">
+      <arg name="name" value="$(var name_th)"/>
+      <arg name="device" value="$(var device)"/>
+      <arg name="simulation" value="$(var simulation)"/>
+    </include>
+  </group>
+  
+  <group scoped="true">
+    <include file="$(find-pkg-share robomaster_ros)/launch/ep.launch">
+      <arg name="name" value="$(var name_rm)"/>
+      <arg name="device" value="$(var device)"/>
+      <arg name="simulation" value="$(var simulation)"/>
+      <arg name="servo" value="true"/>
+    </include>
+  </group>
+</launch>

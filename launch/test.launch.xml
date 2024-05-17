@@ -7,16 +7,6 @@
   <arg name="device" default="tcp:host=localhost;port=33333"/>
   <arg name="simulation" default="True"/>
 
-  <node pkg="project" exec="firstController" namespace="$(var name_rm)" output='screen' />
-
-  <group scoped="true">
-    <include file="$(find-pkg-share thymioid)/launch/main.launch">
-      <arg name="name" value="$(var name_th)"/>
-      <arg name="device" value="$(var device)"/>
-      <arg name="simulation" value="$(var simulation)"/>
-    </include>
-  </group>
-  
   <group scoped="true">
     <include file="$(find-pkg-share robomaster_ros)/launch/ep.launch">
       <!-- <arg name="video_resolution" value="320"/> -->
@@ -34,4 +24,14 @@
       <arg name="tof_3" value="true"/> -->
     </include>
   </group>
+
+  <group scoped="true">
+    <include file="$(find-pkg-share thymioid)/launch/main.launch">
+      <arg name="name" value="$(var name_th)"/>
+      <arg name="device" value="$(var device)"/>
+      <arg name="simulation" value="$(var simulation)"/>
+    </include>
+  </group>
+  
+  <node pkg="project" exec="firstController" namespace="$(var name_rm)" output='screen' />
 </launch>

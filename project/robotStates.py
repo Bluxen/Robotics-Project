@@ -6,3 +6,7 @@ class Rstates(Enum):
     ALIGNING=2              # state for aligning with the aruco marker
     MOVING_FORWARD=3        # state for moving closer to the obstacle
     PREPARING_TO_GRAB= 4    # state for preparing to grab the object   
+    GRAB=5                  # state for grabbing the object 
+    UP=6                    # state for preparing raising the object  
+    DONE =10
+    

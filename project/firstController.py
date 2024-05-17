@@ -23,6 +23,7 @@ import matplotlib as mpl
 from .arucoHelperclass import arucoHelper
 from .visualServoing import VS
 from .robotStates import Rstates
+from rclpy.task import Future
 
 from ament_index_python.packages import get_package_share_directory
 SHARE = get_package_share_directory('project')+'/'
@@ -92,18 +93,18 @@ class firstController(Node):
         self.grabbing=False
         
     def start(self): 
-        self.get_logger().info('I am back in start')
+        self.get_logger().info(f'I am back in start to {self.state}')
         if self.state==Rstates.INITIAL:
             # self.get_logger().info('Waiting for gripper server')
-            self.gap.wait_for_server(None)
+            # self.gap.wait_for_server(None)
             # self.get_logger().info('Closing gripper')
             # self.close_gripper()
             # self.get_logger().info('Closed gripper')
-            # self.move_arm(0.1, 0.0)
+            self.move_arm(0.0, -0.3)
             self.state=Rstates.SEARCHING
 
         if self.state==Rstates.SEARCHING:
-            self.move_arm(0.0, -0.08)
+            self.move_arm(0.0, -0.1)
             self.get_logger().info('Start spotting')
             self.image_subscription = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
             self.timer = self.create_timer(1/60, self.search_aruco)
@@ -118,10 +119,19 @@ class firstController(Node):
             self.timer_fw = self.create_timer(1/60, self.move_forward)
         elif self.state==Rstates.PREPARING_TO_GRAB:
             # else:
+            
             self.grabbing=True
-            self.move_arm(0.0, -0.05)
+            self.get_logger().info("GRABBING")
+            self.grab_timer = self.create_timer(1/60, self.align_and_grab)
+        elif self.state==Rstates.GRAB:
+            self.destroy_all_timers(True,self.grab)
+            # self.grab_timer = self.create_timer(1/60, self.grab)
+        elif self.state==Rstates.UP :
+            self.get_logger().info("UP STATE")
+            self.move_arm(0.0, 0.5)
+        else:
             self.get_logger().info("DONE MY JOB, SEE YOU")
-            self.align_and_grab()
+            self.destroy_all_timers()
         # else:
         #     self.get_logger().info("DONE MY JOB, SEE YOU")
 
@@ -160,6 +170,11 @@ class firstController(Node):
         # print('subscription created')
         # self.image_subscription = self.create_subscription(Image, '/camera/image_color', self.img_callback, 10)
         
+    def destroy_all_timers(self, create_new=False,new_timer=None):
+        for timer in self.timers:
+            self.destroy_timer(timer)
+        if create_new:
+            return self.create_timer(1/60, new_timer)
     
     def stop(self):
         # Set all velocities to zero
@@ -336,16 +351,16 @@ class firstController(Node):
             # now that we are aligned, no aruco is found
             # self.move(0.0,0.0,0.0)
             self.aligned = True
+            self.destroy_all_timers()
+            sign=0
             if not self.grabbing:
                 self.state=Rstates.MOVING_FORWARD
-            else:
-                self.state=Rstates.PREPARING_TO_GRAB
+                self.get_logger().info('aligned')
+                self.start()
             
-            self.get_logger().info('aligned')
-            # self.destroy_timer(self.timer)
-            # self.destroy_timer(self.stopper)
-            self.start()
-            sign=0
+            # else:
+            #     self.state=Rstates.PREPARING_TO_GRAB
+            
             return
 
         elif self.sign == 'left':
@@ -386,8 +401,9 @@ class firstController(Node):
                 self.arucoSpotted=False
                 self.move(0.0,0.0,0.0)
                 # self.state=Rstates.PREPARING_TO_GRAB
-                self.destroy_timer(self.timer)
-                self.state=Rstates.MOVING_FORWARD
+                # self.destroy_timer(self.timer)
+                if not self.grabbing:
+                    self.state=Rstates.ALIGNING
                 # self.destroy_timer(self.stopper)
                 self.start()
                 
@@ -445,9 +461,10 @@ class firstController(Node):
         
         if self.arucoSpotted:
             self.get_logger().info("ARUCO SPOTTED")
-            self.state=Rstates.ALIGNING
+            if not self.aligned:
+                self.state=Rstates.ALIGNING
             self.move(0.0, 0.0, 0.0)
-            self.destroy_timer(self.timer)
+            # self.destroy_timer(self.timer)
             # self.state=Rstates.MOVING_FORWARD
             # self.destroy_timer(self.stopper)
             self.start()
@@ -482,22 +499,31 @@ class firstController(Node):
         while result is None:
             self.get_logger().info('start')
             result=self.gap.send_goal_async(GripperControl.Goal(target_state=GripperState.PAUSE))
+            result.set_result(True)
             self.get_logger().info('Waiting for results')
+        self.start()
 
     def close_gripper(self):
         # self.get_logger().info("Closing gripper")
         self.get_logger().info('in method')
-        
         result=None
-        while result is None:
-            self.get_logger().info('start')
+        while result is None or (result is not None and not result.done()):
+            self.get_logger().info('start gripping')
             result=self.gap.send_goal_async(GripperControl.Goal(target_state=GripperState.CLOSE))
             self.get_logger().info('Waiting for results')
+            break
+            # result.add_done_callback(self.align_and_grab())
+            # self.get_logger().info('Waiting for results')
+        if (result is not None and result.done()):
+            self.get_logger().info('GRABBEDDDDDD!!!!')
+        else:
+            self.get_logger().info('NOT GRABBEDDDDDD!!!!')
+        self.state=Rstates.DONE
         
         # time.sleep(1.5)
 
     def move_arm(self, forwards_backwards = 0.0, up_down = 0.0):
-        self.get_logger().info("Moving arm")
+        self.get_logger().info(f"Moving arm of x={forwards_backwards},z={up_down}")
         arm_vel = Vector3()
         arm_vel.x = forwards_backwards
         arm_vel.z = up_down
@@ -508,17 +534,25 @@ class firstController(Node):
         self.move(self.velocity,0.0,0.0)
         if not self.arucoSpotted:
             self.state=Rstates.PREPARING_TO_GRAB
-            self.get_logger().info('\nSTOP RIGHT NOW\n')
+            done=False
+            # while not done:
+            #     self.get_logger().info(f'Waiting for destruction...')
+            #     done=self.destroy_timer(self.timer)
+            #     self.get_logger().info('Waiting for destruction...')
+            
+            # self.get_logger().info('\nSTOP RIGHT NOW\n')
             self.move(0.0,0.0,0.0)
-            self.destroy_timer(self.timer_fw)
+            # if not self.grabbing:
             self.start()
+            return
         # if (self.dist_centre > -1 and self.dist_centre < self.min_distance):
         #     self.cmd_vel.linear.x  = 0.0
         #     self.state = 'ALIGN'
 
     def align_and_grab(self):
-        self.move_arm(0.0, -0.08)
         while not self.move_back:
+            self.move_arm(0.0, -0.05)
+            self.move_arm(0.0, -0.08)
             self.get_logger().info("I'm moving away from object", throttle_duration_sec = 1)
             if (self.start_pose == None):
                 self.start_pose = self.pose3d_to_2d(self.odom_pose)
@@ -534,16 +568,23 @@ class firstController(Node):
             #     self.start_pose = None
             #     self.move_back=True
         if not self.aligned:
-            self.state=Rstates.ALIGNING
-            self.start()
+            # self.state=Rstates.ALIGNING
+            # self.start()
             return
+        self.destroy_all_timers(True, self.align_and_grab)
         self.move(0.0,0.0,0.0)
         # self.open_gripper()
-        self.get_logger().info("Gripper goooooooo!")
-        self.move_arm(0.05, -0.08)
+        self.state=Rstates.GRAB
+        self.start()
+        
+
+    def grab(self):
+        self.move_arm(0.8, 0.0)
+        self.get_logger().info('GRAB GRAB GRAB')
         self.close_gripper()
-        self.move_arm(0.0, 0.1)
-        return
+        self.move_arm(0.0, 0.5)
+        self.state=Rstates.DONE
+        self.start()
 
 def main():
     # Initialize the ROS client library

@@ -20,7 +20,6 @@ class Aruco:
     def detect(self,image):
         image=cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         image=np.asmatrix(image)
-        # self.log(image)
         corners, ids, rejected_img_points = self.detector.detectMarkers(image)
         return corners, ids, rejected_img_points
     

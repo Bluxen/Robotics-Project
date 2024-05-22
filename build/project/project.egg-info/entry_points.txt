@@ -1,4 +1,5 @@
 [console_scripts]
 calibrate = project.calibrate:main
 firstController = project.firstController:main
+vs = rm.node:main
 

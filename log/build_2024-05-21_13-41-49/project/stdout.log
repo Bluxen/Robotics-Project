@@ -1,0 +1,21 @@
+running egg_info
+writing build/project/project.egg-info/PKG-INFO
+writing dependency_links to build/project/project.egg-info/dependency_links.txt
+writing entry points to build/project/project.egg-info/entry_points.txt
+writing requirements to build/project/project.egg-info/requires.txt
+writing top-level names to build/project/project.egg-info/top_level.txt
+reading manifest file 'build/project/project.egg-info/SOURCES.txt'
+writing manifest file 'build/project/project.egg-info/SOURCES.txt'
+running build
+running build_py
+running install
+running install_lib
+running install_data
+running install_egg_info
+removing '/home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project-0.0.0-py3.10.egg-info' (and everything under it)
+Copying build/project/project.egg-info to /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project-0.0.0-py3.10.egg-info
+running install_scripts
+Installing calibrate script to /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/project
+Installing firstController script to /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/project
+Installing vs script to /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/project
+writing list of installed files to '/home/robotics/dev_ws/src/Robotics-Project/build/project/install.log'

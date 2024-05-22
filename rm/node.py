@@ -28,6 +28,7 @@ from asyncio import Future
 
 from cv_bridge import CvBridge
 import robomaster
+from .robotStates import Rstates
 
 class RMNode(Node):
     def __init__(self):
@@ -41,18 +42,107 @@ class RMNode(Node):
         self.vel_pub   = self.create_publisher(Twist,   'cmd_vel',   10)
         self.arm_pub   = self.create_publisher(Vector3, 'cmd_arm',   10)
         self.image_pub = self.create_publisher(Image,   'debug_img', 10)
-
+        self.gap = ActionClient(self, GripperControl, 'gripper')
         self.arm_x = 1.
         self.seen = None
         self.v = None
+        self.state=Rstates.INITIAL
 
     def start(self):
+        self.get_logger().info(f'In start {self.state}')
         self.image_sub = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
         self.arm_sub = self.create_subscription(PointStamped, 'arm_position', self.arm_callback, 10)
-        self.timer = self.create_timer(1/60, self.timer_callback)
+        if self.state==Rstates.INITIAL:
+            self.state=Rstates.SEARCHING
+            self.get_logger().info('Searching an Aruco')
+        if self.state==Rstates.SEARCHING:
+            self.arm_pub.publish(Vector3(x=float(0.0),z=float(-0.1)))
+            self.get_logger().info('Start spotting')
+            self.searcher = self.create_timer(1/60, self.search_aruco)
+        elif self.state==Rstates.ALIGNING:
+            self.timer = self.create_timer(1/60, self.timer_callback)
+        elif self.state==Rstates.MOVING_FORWARD:
+            self.t = time.time()
+            self.timer_fw = self.create_timer(1/60, self.move_forward)
+        elif self.state==Rstates.GRAB:
+            # self.grabber = self.create_timer(1/60, self.grab)
+            self.grab()
+        else:
+            self.vel_pub.publish(Twist(
+            linear=Vector3(x=float(0.0), y=float(0.0)),
+            angular=Vector3(z=float(0.0))))
+            self.arm_pub.publish(Vector3(x=float(-0.1),z=float(0.2)))
+            self.get_logger().info('DONE THIS PART')
+            self.done.set_result(1)
 
+    def grab(self):
+        self.arm_pub.publish(Vector3(x=float(0.3),z=float(0.0)))
+
+        self.get_logger().info('GRAB GRAB GRAB')
+        self.vel_pub.publish(Twist(
+            linear=Vector3(x=float(0.0), y=float(0.0)),
+            angular=Vector3(z=float(0.0))))
+        self.t = time.time()
+        self.close_gripper()
+        
+
+        self.arm_pub.publish(Vector3(x=float(0.0),z=float(0.5)))
+        self.state=Rstates.DONE
+        # self.destroy_timer(self.grabber)
+        self.start()
+
+    def close_gripper(self):
+        # self.get_logger().info("Closing gripper")
+        self.get_logger().info('in method')
+        result=None
+        # while result is None or (result is not None and not result.done()):
+            # self.get_logger().info('waiting')
+        future=self.gap.send_goal_async(GripperControl.Goal(target_state=GripperState.CLOSE))
+        try: rclpy.spin_until_future_complete(self, future,timeout_sec=0.5)
+        except KeyboardInterrupt: pass
+        # if (result is not None and result.done()):
+        #     self.get_logger().info('GRABBEDDDDDD!!!!')
+        # else:
+        #     self.get_logger().info('NOT GRABBEDDDDDD!!!!')
+        self.state=Rstates.DONE
+
+
+
+    def search_aruco(self):
+        self.get_logger().info('in method')
+        if self.state!=Rstates.SEARCHING:
+            self.get_logger().info("ARUCO SPOTTED")
+            self.state=Rstates.ALIGNING
+            self.vel_pub.publish(Twist(
+            linear=Vector3(x=float(0.0), y=float(0.0)),
+            angular=Vector3(z=float(0.0))))
+            self.destroy_timer(self.searcher)
+            self.start()
+            return
+        self.get_logger().info('NOT SPOTTED')
+        if True:
+            z = 0.2
+            self.vel_pub.publish(Twist(
+            linear=Vector3(x=float(0.0), y=float(0.0)),
+            angular=Vector3(z=float(z))))
+            return
+
+        
     def arm_callback(self, msg):
         self.arm_x = msg.point.x
+
+    def move_forward(self):
+        self.get_logger().info("I'm moving forward")
+        self.vel_pub.publish(Twist(
+            linear=Vector3(x=float(0.1), y=float(0)),
+            angular=Vector3(z=float(0))))
+        if self.t+0.5 <= time.time():
+            self.get_logger().info("I am done moving forward")
+            self.destroy_timer(self.move_forward)
+            self.state=Rstates.GRAB
+            self.move(0.0,0.0,0.0)
+            self.start()
+        
 
     def timer_callback(self):
         if self.v is None: return
@@ -97,6 +187,7 @@ class RMNode(Node):
         corners, ids, rejected_img_points = self.aruco.detect(img)
 
         if ids is not None:
+            self.state=Rstates.ALIGNING
             self.seen = time.time()
             rvecs, tvecs, objp = self.aruco.get_aruco_poses(corners)
             img = self.aruco.draw_markers(img, corners, ids, rvecs, tvecs)
@@ -105,7 +196,7 @@ class RMNode(Node):
             tvec = tvecs[0][0]
 
             P = self.mktransform(np.matrix(tvec), np.matrix(rvec))
-            T = self.mktransform(np.matrix([0., 0.00, 0.15]), np.matrix([0., 0., 0.]))
+            T = self.mktransform(np.matrix([0., 0.05, 0.15]), np.matrix([0., 0., 0.]))
             M = P @ T
             R = M[:3,:3]
             nrvec, _ = cv2.Rodrigues(R)
@@ -116,7 +207,11 @@ class RMNode(Node):
             speed = (np.abs(ntvec).sum() + abs(theta)) / 4
             if speed < 0.02:
                 self.get_logger().info("Done")
-                self.done.set_result(1)
+                self.state=Rstates.MOVING_FORWARD
+                self.destroy_timer(self.timer)
+                self.start()
+                
+                # self.done.set_result(1)
             
         self.image_pub.publish(msg)
 

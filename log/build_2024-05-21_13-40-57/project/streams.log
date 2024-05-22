@@ -1,0 +1,32 @@
+[0.353s] Invoking command in '/home/robotics/dev_ws/src/Robotics-Project': PYTHONPATH=/home/robotics/dev_ws/src/Robotics-Project/build/project/prefix_override:/home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base build/project build --build-base /home/robotics/dev_ws/src/Robotics-Project/build/project/build install --record /home/robotics/dev_ws/src/Robotics-Project/build/project/install.log --single-version-externally-managed
+[0.479s] running egg_info
+[0.480s] writing build/project/project.egg-info/PKG-INFO
+[0.480s] writing dependency_links to build/project/project.egg-info/dependency_links.txt
+[0.480s] writing entry points to build/project/project.egg-info/entry_points.txt
+[0.480s] writing requirements to build/project/project.egg-info/requires.txt
+[0.480s] writing top-level names to build/project/project.egg-info/top_level.txt
+[0.481s] package init file 'rm/__init__.py' not found (or not a regular file)
+[0.481s] reading manifest file 'build/project/project.egg-info/SOURCES.txt'
+[0.482s] writing manifest file 'build/project/project.egg-info/SOURCES.txt'
+[0.482s] running build
+[0.482s] running build_py
+[0.482s] copying rm/node.py -> /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/rm
+[0.482s] copying rm/robotStates.py -> /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/rm
+[0.482s] running install
+[0.482s] /usr/lib/python3/dist-packages/setuptools/command/install.py:34: SetuptoolsDeprecationWarning: setup.py install is deprecated. Use build and pip and other standards-based tools.
+[0.482s]   warnings.warn(
+[0.482s] running install_lib
+[0.483s] copying /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/rm/node.py -> /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/rm
+[0.483s] copying /home/robotics/dev_ws/src/Robotics-Project/build/project/build/lib/rm/robotStates.py -> /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/rm
+[0.483s] byte-compiling /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/rm/node.py to node.cpython-310.pyc
+[0.484s] byte-compiling /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/rm/robotStates.py to robotStates.cpython-310.pyc
+[0.485s] running install_data
+[0.485s] running install_egg_info
+[0.486s] removing '/home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project-0.0.0-py3.10.egg-info' (and everything under it)
+[0.486s] Copying build/project/project.egg-info to /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages/project-0.0.0-py3.10.egg-info
+[0.487s] running install_scripts
+[0.498s] Installing calibrate script to /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/project
+[0.498s] Installing firstController script to /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/project
+[0.498s] Installing vs script to /home/robotics/dev_ws/src/Robotics-Project/install/project/lib/project
+[0.498s] writing list of installed files to '/home/robotics/dev_ws/src/Robotics-Project/build/project/install.log'
+[0.513s] Invoked command in '/home/robotics/dev_ws/src/Robotics-Project' returned '0': PYTHONPATH=/home/robotics/dev_ws/src/Robotics-Project/build/project/prefix_override:/home/robotics/dev_ws/src/Robotics-Project/install/project/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base build/project build --build-base /home/robotics/dev_ws/src/Robotics-Project/build/project/build install --record /home/robotics/dev_ws/src/Robotics-Project/build/project/install.log --single-version-externally-managed

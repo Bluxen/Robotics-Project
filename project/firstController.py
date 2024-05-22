@@ -119,7 +119,7 @@ class firstController(Node):
             self.timer_fw = self.create_timer(1/60, self.move_forward)
         elif self.state==Rstates.PREPARING_TO_GRAB:
             # else:
-            
+            self.move_arm(0.0, -0.03)
             self.grabbing=True
             self.get_logger().info("GRABBING")
             self.grab_timer = self.create_timer(1/60, self.align_and_grab)
@@ -581,7 +581,7 @@ class firstController(Node):
     def grab(self):
         self.move_arm(0.8, 0.0)
         self.get_logger().info('GRAB GRAB GRAB')
-        self.close_gripper()
+        # self.close_gripper()
         self.move_arm(0.0, 0.5)
         self.state=Rstates.DONE
         self.start()

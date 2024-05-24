@@ -47,7 +47,7 @@ class OptimalCalibrationData(CalibrationData):
     size    = (640, 360)    # Image size in pixels (TODO currently hardcoded to (640, 360))
     dist    = None
     _fovx   = 120.              # FOV x in degrees
-    _fovy   = None               # FOV y in degrees
+    _fovy   = None              # FOV y in degrees
     _pp     = None              # Principal point
     _ar     = None              # Pixel aspect ratio
     _f      = size[0] / math.tan(math.radians(_fovx) / 2) # Focal length

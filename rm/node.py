@@ -11,8 +11,7 @@ from geometry_msgs.msg import Twist, Pose, Vector3, PointStamped
 from robomaster_msgs.msg import GripperState
 from robomaster_msgs.action import GripperControl
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import Range
-from sensor_msgs.msg import Image,CameraInfo
+from sensor_msgs.msg import Range, Image, CameraInfo, JointState
 import sys
 import time
 import numpy as np
@@ -49,15 +48,17 @@ class RMNode(Node):
         self.state=Rstates.INITIAL
 
     def start(self):
-        self.get_logger().info(f'In start {self.state}')
+        # self.get_logger().info(f'In start {self.state}')
         self.image_sub = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
         self.arm_sub = self.create_subscription(PointStamped, 'arm_position', self.arm_callback, 10)
+        self.joint_sub = self.create_subscription(JointState, 'joint_states', self.joint_state_callback, 10)
         if self.state==Rstates.INITIAL:
+            # return
             self.state=Rstates.SEARCHING
-            self.get_logger().info('Searching an Aruco')
+            # self.get_logger().info('Searching an Aruco')
         if self.state==Rstates.SEARCHING:
             self.arm_pub.publish(Vector3(x=float(0.0),z=float(-0.1)))
-            self.get_logger().info('Start spotting')
+            # self.get_logger().info('Start spotting')
             self.searcher = self.create_timer(1/60, self.search_aruco)
         elif self.state==Rstates.ALIGNING:
             self.timer = self.create_timer(1/60, self.timer_callback)
@@ -72,13 +73,13 @@ class RMNode(Node):
             linear=Vector3(x=float(0.0), y=float(0.0)),
             angular=Vector3(z=float(0.0))))
             self.arm_pub.publish(Vector3(x=float(-0.1),z=float(0.2)))
-            self.get_logger().info('DONE THIS PART')
+            # self.get_logger().info('DONE THIS PART')
             self.done.set_result(1)
 
     def grab(self):
         self.arm_pub.publish(Vector3(x=float(0.3),z=float(0.0)))
 
-        self.get_logger().info('GRAB GRAB GRAB')
+        # self.get_logger().info('GRAB GRAB GRAB')
         self.vel_pub.publish(Twist(
             linear=Vector3(x=float(0.0), y=float(0.0)),
             angular=Vector3(z=float(0.0))))
@@ -93,7 +94,7 @@ class RMNode(Node):
 
     def close_gripper(self):
         # self.get_logger().info("Closing gripper")
-        self.get_logger().info('in method')
+        # self.get_logger().info('in method')
         result=None
         # while result is None or (result is not None and not result.done()):
             # self.get_logger().info('waiting')
@@ -109,9 +110,9 @@ class RMNode(Node):
 
 
     def search_aruco(self):
-        self.get_logger().info('in method')
+        # self.get_logger().info('in method')
         if self.state!=Rstates.SEARCHING:
-            self.get_logger().info("ARUCO SPOTTED")
+            # self.get_logger().info("ARUCO SPOTTED")
             self.state=Rstates.ALIGNING
             self.vel_pub.publish(Twist(
             linear=Vector3(x=float(0.0), y=float(0.0)),
@@ -119,7 +120,7 @@ class RMNode(Node):
             self.destroy_timer(self.searcher)
             self.start()
             return
-        self.get_logger().info('NOT SPOTTED')
+        # self.get_logger().info('NOT SPOTTED')
         if True:
             z = 0.2
             self.vel_pub.publish(Twist(
@@ -134,9 +135,9 @@ class RMNode(Node):
     def move_forward(self):
         self.get_logger().info("I'm moving forward")
         self.vel_pub.publish(Twist(
-            linear=Vector3(x=float(0.1), y=float(0)),
+            linear=Vector3(x=float(0.15), y=float(0)),
             angular=Vector3(z=float(0))))
-        if self.t+0.5 <= time.time():
+        if self.t+0.25 <= time.time():
             self.get_logger().info("I am done moving forward")
             self.destroy_timer(self.move_forward)
             self.state=Rstates.GRAB
@@ -167,8 +168,8 @@ class RMNode(Node):
             )
 
     def move(self, x=0, y=0, z=0, tx=0, ty=0, tz=0):
-        if self.arm_x < 0.180 and x>0:
-            arm_x, body_x = 0.4*x, 0.
+        if self.arm_x < 0.178 and x>0:
+            arm_x, body_x = 0.4*x, 0.6*x
         else:
             arm_x, body_x = 0., x
         self.vel_pub.publish(Twist(
@@ -196,7 +197,7 @@ class RMNode(Node):
             tvec = tvecs[0][0]
 
             P = self.mktransform(np.matrix(tvec), np.matrix(rvec))
-            T = self.mktransform(np.matrix([0., 0.05, 0.15]), np.matrix([0., 0., 0.]))
+            T = self.mktransform(np.matrix([0., 0.15, 0.30]), np.matrix([0., 0., 0.]))
             M = P @ T
             R = M[:3,:3]
             nrvec, _ = cv2.Rodrigues(R)
@@ -205,15 +206,20 @@ class RMNode(Node):
             theta = nrvec[2]
             self.v = (ntvec, theta)
             speed = (np.abs(ntvec).sum() + abs(theta)) / 4
-            if speed < 0.02:
-                self.get_logger().info("Done")
+            if speed < 0.025:
                 self.state=Rstates.MOVING_FORWARD
                 self.destroy_timer(self.timer)
                 self.start()
-                
-                # self.done.set_result(1)
             
         self.image_pub.publish(msg)
+
+    def joint_state_callback(self, msg: JointState):
+        self.get_logger().info(f"{msg.name}")
+        joints = ['RM/arm_1_joint', 'RM/arm_2_joint', 'RM/rod_joint', 'RM/rod_1_joint']
+        names, poses = msg.name, msg.position
+        idxs = [names.index(joint) for joint in joints]
+        thes = [poses[idx] for idx in idxs]
+        self.get_logger().info(f"{[f'{name}: {theta}' for name, theta in zip(joints, thes)]}")
 
     def stop(self): self.move()
 

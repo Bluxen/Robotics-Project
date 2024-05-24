@@ -8,5 +8,6 @@ class Rstates(Enum):
     PREPARING_TO_GRAB= 4    # state for preparing to grab the object   
     GRAB=5                  # state for grabbing the object 
     UP=6                    # state for preparing raising the object  
+    PUTDOWN=7
     DONE =10
     

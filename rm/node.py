@@ -68,13 +68,26 @@ class RMNode(Node):
         elif self.state==Rstates.GRAB:
             # self.grabber = self.create_timer(1/60, self.grab)
             self.grab()
-        else:
             self.vel_pub.publish(Twist(
             linear=Vector3(x=float(0.0), y=float(0.0)),
             angular=Vector3(z=float(0.0))))
-            self.arm_pub.publish(Vector3(x=float(-0.1),z=float(0.2)))
+            self.arm_pub.publish(Vector3(x=float(0.0),z=float(0.018)))
+            self.state=Rstates.PUTDOWN
+            # self.start()
+            
+        if self.state==Rstates.PUTDOWN:
+            i=0
+            # while i<3:
+            #     self.arm_pub.publish(Vector3(x=float(0.0),z=float(-0.1)))
+            #     i+=1
+            # self.arm_pub.publish(Vector3(x=float(0.0),z=float(-0.1)))
+            self.get_logger().info('PUT DOWN')
+            self.state=Rstates.DONE
+            self.start()
+        else:
             # self.get_logger().info('DONE THIS PART')
-            self.done.set_result(1)
+            # self.done.set_result(1)
+            pass
 
     def grab(self):
         self.arm_pub.publish(Vector3(x=float(0.3),z=float(0.0)))
@@ -87,10 +100,10 @@ class RMNode(Node):
         self.close_gripper()
         
 
-        self.arm_pub.publish(Vector3(x=float(0.0),z=float(0.5)))
-        self.state=Rstates.DONE
+        # self.arm_pub.publish(Vector3(x=float(0.0),z=float(0.5)))
+        self.state=Rstates.PUTDOWN
         # self.destroy_timer(self.grabber)
-        self.start()
+        # self.start()
 
     def close_gripper(self):
         # self.get_logger().info("Closing gripper")
@@ -105,7 +118,7 @@ class RMNode(Node):
         #     self.get_logger().info('GRABBEDDDDDD!!!!')
         # else:
         #     self.get_logger().info('NOT GRABBEDDDDDD!!!!')
-        self.state=Rstates.DONE
+        # self.state=Rstates.DONE
 
 
 
@@ -135,7 +148,7 @@ class RMNode(Node):
     def move_forward(self):
         self.get_logger().info("I'm moving forward")
         self.vel_pub.publish(Twist(
-            linear=Vector3(x=float(0.15), y=float(0)),
+            linear=Vector3(x=float(0.1), y=float(0)),
             angular=Vector3(z=float(0))))
         if self.t+0.25 <= time.time():
             self.get_logger().info("I am done moving forward")
@@ -219,7 +232,7 @@ class RMNode(Node):
         names, poses = msg.name, msg.position
         idxs = [names.index(joint) for joint in joints]
         thes = [poses[idx] for idx in idxs]
-        self.get_logger().info(f"{[f'{name}: {theta}' for name, theta in zip(joints, thes)]}")
+        # self.get_logger().info(f"{[f'{name}: {theta}' for name, theta in zip(joints, thes)]}")
 
     def stop(self): self.move()
 

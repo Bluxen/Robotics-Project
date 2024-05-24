@@ -7,7 +7,7 @@ from robomaster import robot as rm
 import tf_transformations
 import time
 
-from geometry_msgs.msg import Twist, Pose, Vector3, PointStamped
+from geometry_msgs.msg import Twist, Quaternion, Vector3, PointStamped
 from robomaster_msgs.msg import GripperState
 from robomaster_msgs.action import GripperControl
 from nav_msgs.msg import Odometry
@@ -29,6 +29,32 @@ from cv_bridge import CvBridge
 import robomaster
 from .robotStates import Rstates
 
+import math
+ 
+def euler_from_quaternion(x, y, z, w):
+        """
+        Source: https://automaticaddison.com/how-to-convert-a-quaternion-into-euler-angles-in-python/
+
+        Convert a quaternion into euler angles (roll, pitch, yaw)
+        roll is rotation around x in radians (counterclockwise)
+        pitch is rotation around y in radians (counterclockwise)
+        yaw is rotation around z in radians (counterclockwise)
+        """
+        t0 = +2.0 * (w * x + y * z)
+        t1 = +1.0 - 2.0 * (x * x + y * y)
+        roll_x = math.atan2(t0, t1)
+     
+        t2 = +2.0 * (w * y - z * x)
+        t2 = +1.0 if t2 > +1.0 else t2
+        t2 = -1.0 if t2 < -1.0 else t2
+        pitch_y = math.asin(t2)
+     
+        t3 = +2.0 * (w * z + x * y)
+        t4 = +1.0 - 2.0 * (y * y + z * z)
+        yaw_z = math.atan2(t3, t4)
+     
+        return roll_x, pitch_y, yaw_z # in radians
+
 class RMNode(Node):
     def __init__(self):
         super().__init__('controller_node')
@@ -46,12 +72,14 @@ class RMNode(Node):
         self.seen = None
         self.v = None
         self.state=Rstates.INITIAL
+        self.ctg_linear, self.ctg_angular = None, None
 
     def start(self):
         # self.get_logger().info(f'In start {self.state}')
         self.image_sub = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
         self.arm_sub = self.create_subscription(PointStamped, 'arm_position', self.arm_callback, 10)
-        self.joint_sub = self.create_subscription(JointState, 'joint_states', self.joint_state_callback, 10)
+        self.ctg_linear_sub  = self.create_subscription(Vector3,    'ctg_linear',  self.ctg_linear_callback, 10)
+        self.ctg_angular_sub = self.create_subscription(Quaternion, 'ctg_angular', self.ctg_angular_callback, 10)
         if self.state==Rstates.INITIAL:
             # return
             self.state=Rstates.SEARCHING
@@ -146,7 +174,7 @@ class RMNode(Node):
         self.arm_x = msg.point.x
 
     def move_forward(self):
-        self.get_logger().info("I'm moving forward")
+        # self.get_logger().info("I'm moving forward")
         self.vel_pub.publish(Twist(
             linear=Vector3(x=float(0.1), y=float(0)),
             angular=Vector3(z=float(0))))
@@ -210,8 +238,12 @@ class RMNode(Node):
             tvec = tvecs[0][0]
 
             P = self.mktransform(np.matrix(tvec), np.matrix(rvec))
-            T = self.mktransform(np.matrix([0., 0.15, 0.30]), np.matrix([0., 0., 0.]))
+            T = self.mktransform(np.matrix([0., 0., 0.2]), np.matrix([0., 0., 0.]))
             M = P @ T
+            self.get_logger().info(f"{self.ctg_linear}, {self.ctg_angular}")
+            if self.ctg_linear is not None and self.ctg_angular is not None:
+                ctg = self.mktransform(self.ctg_linear, self.ctg_angular)
+                M = M @ ctg
             R = M[:3,:3]
             nrvec, _ = cv2.Rodrigues(R)
             ntvec = M[:3,3]
@@ -219,20 +251,20 @@ class RMNode(Node):
             theta = nrvec[2]
             self.v = (ntvec, theta)
             speed = (np.abs(ntvec).sum() + abs(theta)) / 4
-            if speed < 0.025:
+            if speed < 0.03:
                 self.state=Rstates.MOVING_FORWARD
                 self.destroy_timer(self.timer)
                 self.start()
             
         self.image_pub.publish(msg)
 
-    def joint_state_callback(self, msg: JointState):
-        self.get_logger().info(f"{msg.name}")
-        joints = ['RM/arm_1_joint', 'RM/arm_2_joint', 'RM/rod_joint', 'RM/rod_1_joint']
-        names, poses = msg.name, msg.position
-        idxs = [names.index(joint) for joint in joints]
-        thes = [poses[idx] for idx in idxs]
-        # self.get_logger().info(f"{[f'{name}: {theta}' for name, theta in zip(joints, thes)]}")
+    def ctg_linear_callback(self, msg: Vector3):
+        self.ctg_linear = np.matrix([0., msg.x, msg.z])
+
+    def ctg_angular_callback(self, msg: Quaternion):
+        qx, qy, qz, qw = msg.x, msg.y, msg.z, msg.w
+        x, y, z = euler_from_quaternion(qx, qy, qz, qw)
+        self.ctg_angular = np.matrix([y, 0., 0.])
 
     def stop(self): self.move()
 

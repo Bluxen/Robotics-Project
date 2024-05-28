@@ -28,6 +28,7 @@ class MoveForward(State):
             self.initial_position = position
         elif distance(self.initial_position, position) >= 0.14:
             self.grab()
+            self.gap.destroy()
             self.switch_state(None)
 
     def grab(self):

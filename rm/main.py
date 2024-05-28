@@ -8,17 +8,16 @@ def main():
     rclpy.init(args = sys.argv)
     os.environ["XDG_SESSION_TYPE"] = "xcb"
 
-    state = Align
+    state = Align(55)
 
     while state is not None:
-        node = state()
+        node = state
         node.init()
 
         # Keep processings events until someone manually shuts down the node
         try: rclpy.spin_until_future_complete(node, node.done)
         except KeyboardInterrupt: break
 
-        node.stop()
         node.stop()
         node.destroy_node()
         state = node.done.result()

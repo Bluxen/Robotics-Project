@@ -53,6 +53,10 @@ def mktransform(tvec, rvec):
 
 class Align(State):
 
+    def __init__(self, target_id):
+        super().__init__()
+        self.target_id = target_id
+
     v = None
     def init(self):
         self.bridge = CvBridge()
@@ -61,7 +65,8 @@ class Align(State):
         self.image_sub = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
         self.ctg_linear_sub  = self.create_subscription(Vector3,    'ctg_linear',  self.ctg_linear_callback, 10)
         self.ctg_angular_sub = self.create_subscription(Quaternion, 'ctg_angular', self.ctg_angular_callback, 10)
-
+        self.roll_linear, self.roll_angular = [], []
+        
     def timer_callback(self):
         if self.v is None: return
         t = time.time()
@@ -89,13 +94,14 @@ class Align(State):
         
         corners, ids, rejected_img_points = self.aruco.detect(img)
 
-        if ids is not None:
+        if ids is not None and self.target_id in ids:
             self.seen = time.time()
             rvecs, tvecs, objp = self.aruco.get_aruco_poses(corners)
             img = self.aruco.draw_markers(img, corners, ids, rvecs, tvecs)
-
-            rvec = rvecs[0][0]
-            tvec = tvecs[0][0]
+            
+            idx = ids.tolist().index([self.target_id])
+            rvec = rvecs[idx][0]
+            tvec = tvecs[idx][0]
 
             P = mktransform(np.matrix(tvec), np.matrix(rvec))
             T = mktransform(np.matrix([0., 0.03, 0.32]), np.matrix([0., 0., 0.]))
@@ -110,11 +116,18 @@ class Align(State):
 
             theta = nrvec[2]
             self.v = (ntvec, theta)
+
+            self.roll_linear.append(ntvec)
+            self.roll_angular.append(theta)
+            # self.roll_linear = self.roll_linear[len(roll_linear)]
+            # nrvec = self
             speed = (np.abs(ntvec).sum() + abs(theta)) / 4
+
+
 
             self.aruco.draw_pose(img, nrvec, ntvec)
             if speed < 0.01:
-                self.switch_state(MoveForward)
+                self.switch_state(MoveForward())
             
         self.image_pub.publish(msg)
 
@@ -125,5 +138,4 @@ class Align(State):
     def ctg_angular_callback(self, msg: Quaternion):
         qx, qy, qz, qw = msg.x, msg.y, msg.z, msg.w
         x, y, z = euler_from_quaternion(qx, qy, qz, qw)
-        self.get_logger().info(f"{msg}")
         self.ctg_angular = np.matrix([y, 0., 0.])

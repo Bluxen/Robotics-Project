@@ -28,3 +28,6 @@ class Aruco:
         for rvec, tvec in zip(rvecs, tvecs):
             cv2.drawFrameAxes(image, self.data.mtx, self.data.dist, rvec, tvec, self.size * 1.5, 2)
         return image
+    
+    def draw_pose(self, image, rvec, tvec):
+        cv2.drawFrameAxes(image, self.data.mtx, self.data.dist, rvec, tvec, self.size * 0.5, 4)

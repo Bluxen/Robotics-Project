@@ -22,7 +22,6 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from .aruco import Aruco
-from .vs import VS
 from asyncio import Future
 
 from cv_bridge import CvBridge
@@ -30,7 +29,6 @@ import robomaster
 from .robotStates import Rstates
 
 import math
-from .PID import pid
  
 def euler_from_quaternion(x, y, z, w):
         """
@@ -60,7 +58,6 @@ class RMNode(Node):
     def __init__(self):
         super().__init__('controller_node')
 
-        self.vs = VS(logger=self.get_logger())
         self.aruco = Aruco(logger=self.get_logger())
         self.bridge = CvBridge()
         self.done = Future()
@@ -74,12 +71,9 @@ class RMNode(Node):
         self.v = None
         self.state=Rstates.INITIAL
         self.ctg_linear, self.ctg_angular = None, None
-        self.targetaruco=55
-        self.on_the_ground=False
-        self.pid=pid(self.get_logger())
 
     def start(self):
-        self.get_logger().info(f'In start {self.state}')
+        # self.get_logger().info(f'In start {self.state}')
         self.image_sub = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
         self.arm_sub = self.create_subscription(PointStamped, 'arm_position', self.arm_callback, 10)
         self.ctg_linear_sub  = self.create_subscription(Vector3,    'ctg_linear',  self.ctg_linear_callback, 10)
@@ -91,50 +85,38 @@ class RMNode(Node):
         if self.state==Rstates.SEARCHING:
             self.arm_pub.publish(Vector3(x=float(0.0),z=float(-0.1)))
             # self.get_logger().info('Start spotting')
-            
             self.searcher = self.create_timer(1/60, self.search_aruco)
-            
         elif self.state==Rstates.ALIGNING:
-            # if self.on_the_ground==False:
-            #     self.timer = self.create_timer(1/60, self.timer_callback)
-            # else:
-            #     self.searcher = self.create_timer(1/60, self.rotate_of_given_theta)
             self.timer = self.create_timer(1/60, self.timer_callback)
         elif self.state==Rstates.MOVING_FORWARD:
-            self.destroy_all_timers()
             self.t = time.time()
             self.timer_fw = self.create_timer(1/60, self.move_forward)
         elif self.state==Rstates.GRAB:
             # self.grabber = self.create_timer(1/60, self.grab)
-            self.destroy_all_timers()
             self.grab()
             self.vel_pub.publish(Twist(
             linear=Vector3(x=float(0.0), y=float(0.0)),
             angular=Vector3(z=float(0.0))))
-            self.arm_pub.publish(Vector3(x=float(0.0),z=float(0.03)))
-        #     self.state=Rstates.PUTDOWN
-        #     self.get_logger().info('GRABBED')
-        #     # self.start()
+            self.arm_pub.publish(Vector3(x=float(0.0),z=float(0.018)))
+            self.state=Rstates.PUTDOWN
+            # self.start()
             
-        # if self.state==Rstates.PUTDOWN:
-           
+        if self.state==Rstates.PUTDOWN:
+            i=0
             # while i<3:
             #     self.arm_pub.publish(Vector3(x=float(0.0),z=float(-0.1)))
             #     i+=1
             # self.arm_pub.publish(Vector3(x=float(0.0),z=float(-0.1)))
             self.get_logger().info('PUT DOWN')
-            self.on_the_ground=True
-            self.state=Rstates.SEARCHING
-            self.targetaruco=7
+            self.state=Rstates.DONE
             self.start()
         else:
-            self.destroy_all_timers()
-            self.get_logger().info('DONE THIS PART')
+            # self.get_logger().info('DONE THIS PART')
             # self.done.set_result(1)
             pass
 
     def grab(self):
-        # self.arm_pub.publish(Vector3(x=float(0.3),z=float(0.0)))
+        self.arm_pub.publish(Vector3(x=float(0.3),z=float(0.0)))
 
         # self.get_logger().info('GRAB GRAB GRAB')
         self.vel_pub.publish(Twist(
@@ -142,6 +124,8 @@ class RMNode(Node):
             angular=Vector3(z=float(0.0))))
         self.t = time.time()
         self.close_gripper()
+        
+
         # self.arm_pub.publish(Vector3(x=float(0.0),z=float(0.5)))
         self.state=Rstates.PUTDOWN
         # self.destroy_timer(self.grabber)
@@ -154,8 +138,8 @@ class RMNode(Node):
         # while result is None or (result is not None and not result.done()):
             # self.get_logger().info('waiting')
         future=self.gap.send_goal_async(GripperControl.Goal(target_state=GripperState.CLOSE))
-        # try: rclpy.spin_until_future_complete(self, future,timeout_sec=0.5)
-        # except KeyboardInterrupt: pass
+        try: rclpy.spin_until_future_complete(self, future,timeout_sec=0.5)
+        except KeyboardInterrupt: pass
         # if (result is not None and result.done()):
         #     self.get_logger().info('GRABBEDDDDDD!!!!')
         # else:
@@ -189,75 +173,14 @@ class RMNode(Node):
 
     def move_forward(self):
         # self.get_logger().info("I'm moving forward")
-        self.vel_pub.publish(Twist(
-            linear=Vector3(x=float(0.02), y=float(0)),
-            angular=Vector3(z=float(0))))
-        # if self.t+0.1 <= time.time():
-        if self.t+0.15 <= time.time():
+        self.move(x=0.3)
+        if self.t+0.5 <= time.time():
             self.get_logger().info("I am done moving forward")
             self.destroy_timer(self.move_forward)
             self.state=Rstates.GRAB
-            self.vel_pub.publish(Twist(
-            linear=Vector3(x=float(0.0), y=float(0)),
-            angular=Vector3(z=float(0))))
+            self.move(0.0,0.0,0.0)
             self.start()
-        elif self.seen is not None and time.time()>self.seen + 0.1:
-            self.vel_pub.publish(Twist(
-            linear=Vector3(x=float(0.0), y=float(0)),
-            angular=Vector3(z=float(0))))
-            self.get_logger().info("I am done moving forward")
-            # self.destroy_timer(self.move_forward)
-            if self.on_the_ground==False:
-                self.state=Rstates.GRAB
-            else:
-                self.state=Rstates.DONE
-            self.start()
-
-    # def rotate_of_given_theta(self):
-    #     self.get_logger().info("Rotating to align")
-    #     aruco_centre=self.getArUcoCentre(self.corners)
-    #     error = np.arctan2(np.sin(aruco_centre[0]-self.width/2.0), np.cos(aruco_centre[0]-self.width/2.0)) 
         
-    #     error=error%1.57
-    #     sign=self.decideTurning(self.corners)
-    #     if sign == 'stop':
-    #         self.move(0.0,0.0,0.0)
-    #         self.aligned = True
-    #         self.destroy_all_timers()
-    #         sign=None
-    #         self.state=Rstates.MOVING_FORWARD
-    #         self.get_logger().info('aligned')
-    #         self.start()
-    #         return
-    #     elif self.sign == 'left':
-    #         self.aligned = False
-    #         self.get_logger().info('left')
-    #         sign = -1
-    #     else:
-    #         self.aligned = False
-    #         self.get_logger().info('right')
-    #         sign =1
-
-    #     self.velocity=(self.pid.step(error)/1.0)
-    #     z = sign * self.velocity
-    #     self.get_logger().info(f'moving of: {z}')
-    #     self.move(0.0,0.0,z)
-        
-    def decideTurning(self,corners):
-        aruco_centre_x=self.getArUcoCentre(self, corners)[0]
-        if np.isclose(aruco_centre_x,self.width/2, 0.01):
-            return 'stop'
-        elif aruco_centre_x>self.width/2:
-            return 'left'
-        return 'right'
-
-    def getArUcoCentre(self, corners):
-        # get the centre x value
-        topL, topR, bottomR, bottomL = corners[0]
-        # topL, topR, bottomR, bottomL=tuple(topL), tuple(topR), tuple(bottomR), tuple(bottomL)
-        centre_x=(((topL[0]+ topR[0])/2.0)+(bottomR[0]+ bottomL[0])/2.0)/2.0
-        centre_y=(((topL[1]+ bottomL[1])/2.0)+(bottomR[1]+ topR[1])/2.0)/2.0
-        return [int(centre_x),int(centre_y)]
 
     def timer_callback(self):
         if self.v is None: return
@@ -272,15 +195,14 @@ class RMNode(Node):
         if self.seen is not None and self.seen + 0.5 > t:
             self.move(x=x, y=y, z=z, tz=tz)
         else:
-            self.move(0.0,0.0,0.0,0.0,0.0)
-            # alpha = np.interp(t, [self.seen, self.seen+3], [1, 0])
-            # beta = 1-alpha
-            # self.move(
-            #     x=alpha*x + beta*-0.2,
-            #     y=alpha*y,
-            #     z=alpha*z + beta*-0.1,
-            #     tz=alpha*tz
-            # )
+            alpha = np.interp(t, [self.seen, self.seen+3], [1, 0])
+            beta = 1-alpha
+            self.move(
+                x=alpha*x + beta*-0.2,
+                y=alpha*y,
+                z=alpha*z + beta*-0.1,
+                tz=alpha*tz
+            )
 
     def move(self, x=0, y=0, z=0, tx=0, ty=0, tz=0):
         if self.arm_x < 0.178 and x>0:
@@ -299,11 +221,10 @@ class RMNode(Node):
     
     def img_callback(self, msg: Image):
         img = self.bridge.imgmsg_to_cv2(msg)
-        self.height, self.width = msg.height, msg.width
+        
         corners, ids, rejected_img_points = self.aruco.detect(img)
-        self.corners=corners
 
-        if ids is not None and self.targetaruco in ids:
+        if ids is not None:
             self.state=Rstates.ALIGNING
             self.seen = time.time()
             rvecs, tvecs, objp = self.aruco.get_aruco_poses(corners)
@@ -313,9 +234,9 @@ class RMNode(Node):
             tvec = tvecs[0][0]
 
             P = self.mktransform(np.matrix(tvec), np.matrix(rvec))
-            T = self.mktransform(np.matrix([0., 0., 0.2]), np.matrix([0., 0., 0.]))
+            T = self.mktransform(np.matrix([0., 0.025, 0.35]), np.matrix([0., 0., 0.]))
             M = P @ T
-            # self.get_logger().info(f"{self.ctg_linear}, {self.ctg_angular}")
+            self.get_logger().info(f"{self.ctg_linear}, {self.ctg_angular}")
             if self.ctg_linear is not None and self.ctg_angular is not None:
                 ctg = self.mktransform(self.ctg_linear, self.ctg_angular)
                 M = M @ ctg
@@ -326,12 +247,11 @@ class RMNode(Node):
             theta = nrvec[2]
             self.v = (ntvec, theta)
             speed = (np.abs(ntvec).sum() + abs(theta)) / 4
-            if speed < 0.08:
+            if speed < 0.03:
+                self.move()
                 self.state=Rstates.MOVING_FORWARD
-                self.get_logger().info(f'Pass to move forward')
-                # self.destroy_timer(self.timer)
+                self.destroy_timer(self.timer)
                 self.start()
-            # else: self.get_logger().info(f'speed: {speed}')
             
         self.image_pub.publish(msg)
 
@@ -344,10 +264,6 @@ class RMNode(Node):
         self.ctg_angular = np.matrix([y, 0., 0.])
 
     def stop(self): self.move()
-
-    def destroy_all_timers(self):
-        for timer in self.timers:
-            self.destroy_timer(timer)
 
 def main():
     rclpy.init(args = sys.argv)

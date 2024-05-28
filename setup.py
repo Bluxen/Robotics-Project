@@ -25,7 +25,7 @@ setup(
         'console_scripts': [
             'firstController = project.firstController:main',
             'calibrate = project.calibrate:main',
-            'vs = rm.node:main'
+            'vs = rm.main:main'
         ],
     },
 )

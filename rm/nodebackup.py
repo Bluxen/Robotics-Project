@@ -22,7 +22,6 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from .aruco import Aruco
-from .vs import VS
 from asyncio import Future
 
 from cv_bridge import CvBridge
@@ -59,7 +58,6 @@ class RMNode(Node):
     def __init__(self):
         super().__init__('controller_node')
 
-        self.vs = VS(logger=self.get_logger())
         self.aruco = Aruco(logger=self.get_logger())
         self.bridge = CvBridge()
         self.done = Future()
@@ -175,10 +173,8 @@ class RMNode(Node):
 
     def move_forward(self):
         # self.get_logger().info("I'm moving forward")
-        self.vel_pub.publish(Twist(
-            linear=Vector3(x=float(0.1), y=float(0)),
-            angular=Vector3(z=float(0))))
-        if self.t+0.25 <= time.time():
+        self.move(x=0.3)
+        if self.t+0.5 <= time.time():
             self.get_logger().info("I am done moving forward")
             self.destroy_timer(self.move_forward)
             self.state=Rstates.GRAB
@@ -238,7 +234,7 @@ class RMNode(Node):
             tvec = tvecs[0][0]
 
             P = self.mktransform(np.matrix(tvec), np.matrix(rvec))
-            T = self.mktransform(np.matrix([0., 0., 0.2]), np.matrix([0., 0., 0.]))
+            T = self.mktransform(np.matrix([0., 0.025, 0.35]), np.matrix([0., 0., 0.]))
             M = P @ T
             self.get_logger().info(f"{self.ctg_linear}, {self.ctg_angular}")
             if self.ctg_linear is not None and self.ctg_angular is not None:
@@ -252,6 +248,7 @@ class RMNode(Node):
             self.v = (ntvec, theta)
             speed = (np.abs(ntvec).sum() + abs(theta)) / 4
             if speed < 0.03:
+                self.move()
                 self.state=Rstates.MOVING_FORWARD
                 self.destroy_timer(self.timer)
                 self.start()

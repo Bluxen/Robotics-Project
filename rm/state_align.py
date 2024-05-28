@@ -71,7 +71,7 @@ class Align(State):
         x  = tvec[2] *  0.1
         y  = tvec[0] * -0.4
         z  = tvec[1] * -0.1
-        tz = theta   * -0.1
+        tz = theta   * -0.2
         if self.seen is not None and self.seen + 0.5 > t:
             self.move(x=x, y=y, z=z, tz=tz)
         else:
@@ -98,7 +98,7 @@ class Align(State):
             tvec = tvecs[0][0]
 
             P = mktransform(np.matrix(tvec), np.matrix(rvec))
-            T = mktransform(np.matrix([0., 0.025, 0.35]), np.matrix([0., 0., 0.]))
+            T = mktransform(np.matrix([0., 0.03, 0.32]), np.matrix([0., 0., 0.]))
             M = P @ T
             # self.get_logger().info(f"{self.ctg_linear}, {self.ctg_angular}")
             if self.ctg_linear is not None and self.ctg_angular is not None:
@@ -111,15 +111,19 @@ class Align(State):
             theta = nrvec[2]
             self.v = (ntvec, theta)
             speed = (np.abs(ntvec).sum() + abs(theta)) / 4
-            if speed < 0.03:
+
+            self.aruco.draw_pose(img, nrvec, ntvec)
+            if speed < 0.01:
                 self.switch_state(MoveForward)
             
         self.image_pub.publish(msg)
 
     def ctg_linear_callback(self, msg: Vector3):
+        # self.get_logger().info(f"{msg}")
         self.ctg_linear = np.matrix([0., msg.x, msg.z])
 
     def ctg_angular_callback(self, msg: Quaternion):
         qx, qy, qz, qw = msg.x, msg.y, msg.z, msg.w
         x, y, z = euler_from_quaternion(qx, qy, qz, qw)
+        self.get_logger().info(f"{msg}")
         self.ctg_angular = np.matrix([y, 0., 0.])

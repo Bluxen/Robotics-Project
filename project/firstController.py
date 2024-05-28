@@ -124,7 +124,8 @@ class firstController(Node):
             self.get_logger().info("GRABBING")
             self.grab_timer = self.create_timer(1/60, self.align_and_grab)
         elif self.state==Rstates.GRAB:
-            self.destroy_all_timers(True,self.grab)
+            self.destroy_all_timers()
+            self.grab()
             # self.grab_timer = self.create_timer(1/60, self.grab)
         elif self.state==Rstates.UP :
             self.get_logger().info("UP STATE")
@@ -505,22 +506,11 @@ class firstController(Node):
 
     def close_gripper(self):
         # self.get_logger().info("Closing gripper")
-        self.get_logger().info('in method')
+        # self.get_logger().info('in method')
         result=None
-        while result is None or (result is not None and not result.done()):
-            self.get_logger().info('start gripping')
-            result=self.gap.send_goal_async(GripperControl.Goal(target_state=GripperState.CLOSE))
-            self.get_logger().info('Waiting for results')
-            break
-            # result.add_done_callback(self.align_and_grab())
-            # self.get_logger().info('Waiting for results')
-        if (result is not None and result.done()):
-            self.get_logger().info('GRABBEDDDDDD!!!!')
-        else:
-            self.get_logger().info('NOT GRABBEDDDDDD!!!!')
-        self.state=Rstates.DONE
-        
-        # time.sleep(1.5)
+        # while result is None or (result is not None and not result.done()):
+            # self.get_logger().info('waiting')
+        future=self.gap.send_goal_async(GripperControl.Goal(target_state=GripperState.CLOSE))
 
     def move_arm(self, forwards_backwards = 0.0, up_down = 0.0):
         self.get_logger().info(f"Moving arm of x={forwards_backwards},z={up_down}")
@@ -533,7 +523,7 @@ class firstController(Node):
         self.get_logger().info("I'm moving forward", throttle_duration_sec = 1)
         self.move(self.velocity,0.0,0.0)
         if not self.arucoSpotted:
-            self.state=Rstates.PREPARING_TO_GRAB
+            self.state=Rstates.GRAB
             done=False
             # while not done:
             #     self.get_logger().info(f'Waiting for destruction...')

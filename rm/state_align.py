@@ -104,26 +104,33 @@ class Align(State):
             tvec = tvecs[idx][0]
 
             P = mktransform(np.matrix(tvec), np.matrix(rvec))
-            T = mktransform(np.matrix([0., 0.03, 0.32]), np.matrix([0., 0., 0.]))
+            T = mktransform(np.matrix([0., 0.05, 0.32]), np.matrix([0., 0., 0.]))
             M = P @ T
             # self.get_logger().info(f"{self.ctg_linear}, {self.ctg_angular}")
+            nrvec, _ = cv2.Rodrigues(M[:3,:3])
+            ntvec = M[:3,3]
+            self.aruco.draw_pose(img, nrvec, ntvec)
+
             if self.ctg_linear is not None and self.ctg_angular is not None:
                 ctg = mktransform(self.ctg_linear, self.ctg_angular)
                 M = M @ ctg
+
             R = M[:3,:3]
             nrvec, _ = cv2.Rodrigues(R)
             ntvec = M[:3,3]
 
+            self.roll_linear.append(ntvec)
+            self.roll_angular.append(nrvec)
+            self.roll_linear  = self.roll_linear [max(len(self.roll_linear )-30,0):]
+            self.roll_angular = self.roll_angular[max(len(self.roll_angular)-30,0):]
+            ntvec = (sum(self.roll_linear) /len(self.roll_linear)) 
+            nrvec = (sum(self.roll_angular)/len(self.roll_angular))
+            self.get_logger().info(f"{ntvec}, {nrvec}")
+            
+            # nrvec = self
             theta = nrvec[2]
             self.v = (ntvec, theta)
-
-            self.roll_linear.append(ntvec)
-            self.roll_angular.append(theta)
-            # self.roll_linear = self.roll_linear[len(roll_linear)]
-            # nrvec = self
             speed = (np.abs(ntvec).sum() + abs(theta)) / 4
-
-
 
             self.aruco.draw_pose(img, nrvec, ntvec)
             if speed < 0.01:

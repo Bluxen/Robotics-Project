@@ -7,7 +7,7 @@ from robomaster_msgs.msg import GripperState
 from robomaster_msgs.action import GripperControl
 import time
 
-from .follow_thymio import FollowThymio
+from .state_follow_thymio import FollowThymio
 
 def distance(pos1, pos2):
     return sqrt(pow(pos1.x - pos2.x, 2) + pow(pos1.y - pos2.y, 2) + pow(pos1.z - pos2.z, 2))
@@ -51,4 +51,4 @@ class MoveForward(State):
         if distance(self.initial_position, position) >= 0.3:
             self.grab()
             self.gap.destroy()
-            self.switch_state(FollowThymio(74))
+            self.switch_state(FollowThymio())

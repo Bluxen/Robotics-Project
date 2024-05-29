@@ -1,5 +1,5 @@
 import rclpy
-from rclpy.node import Node
+from rclpy.node import Node, Parameter
 from rclpy.action.client import ActionClient
 
 import time
@@ -15,6 +15,7 @@ import cv2
 import os
 from .aruco import Aruco
 from .state import State
+from numpy import pi
 
 from .state_move_forward import MoveForward
 
@@ -53,9 +54,10 @@ def mktransform(tvec, rvec):
 
 class Align(State):
 
-    def __init__(self, target_id):
+    def __init__(self):
         super().__init__()
-        self.target_id = target_id
+        self.declare_parameter('target_id', rclpy.Parameter.Type.INTEGER)
+        self.target_id = self.get_parameter_or('target_id', None).get_parameter_value().integer_value
 
     v = None
     def init(self):
@@ -75,7 +77,7 @@ class Align(State):
         #               P
         x  = tvec[2] *  0.1
         y  = tvec[0] * -0.4
-        z  = tvec[1] * -0.1
+        z  = tvec[1] * -0.2
         tz = theta   * -0.2
         if self.seen is not None and self.seen + 0.5 > t:
             self.move(x=x, y=y, z=z, tz=tz)
@@ -97,11 +99,19 @@ class Align(State):
         if ids is not None and self.target_id in ids:
             self.seen = time.time()
             rvecs, tvecs, objp = self.aruco.get_aruco_poses(corners)
+
             img = self.aruco.draw_markers(img, corners, ids, rvecs, tvecs)
             
             idx = ids.tolist().index([self.target_id])
             rvec = rvecs[idx][0]
             tvec = tvecs[idx][0]
+            self.aruco.draw_pose(img, rvec, tvec)
+
+            
+            self.get_logger().info(f"{rvec}")
+            # self.aruco.draw_pose(img, rvec, tvec)
+            rvec[1] = 0.
+            rvec[0] = pi if rvec[0] > 2. else rvec[0]
 
             P = mktransform(np.matrix(tvec), np.matrix(rvec))
             T = mktransform(np.matrix([0., 0.05, 0.32]), np.matrix([0., 0., 0.]))
@@ -125,7 +135,7 @@ class Align(State):
             self.roll_angular = self.roll_angular[max(len(self.roll_angular)-30,0):]
             ntvec = (sum(self.roll_linear) /len(self.roll_linear)) 
             nrvec = (sum(self.roll_angular)/len(self.roll_angular))
-            self.get_logger().info(f"{ntvec}, {nrvec}")
+            # self.get_logger().info(f"{ntvec}, {nrvec}")
             
             # nrvec = self
             theta = nrvec[2]
@@ -133,7 +143,7 @@ class Align(State):
             speed = (np.abs(ntvec).sum() + abs(theta)) / 4
 
             self.aruco.draw_pose(img, nrvec, ntvec)
-            if speed < 0.01:
+            if speed < 0.02:
                 self.switch_state(MoveForward())
             
         self.image_pub.publish(msg)

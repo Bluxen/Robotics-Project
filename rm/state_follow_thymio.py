@@ -52,10 +52,12 @@ def mktransform(tvec, rvec):
 
 class FollowThymio(State):
 
-    def __init__(self, target_id):
+    def __init__(self):
         super().__init__()
-        self.target_id = target_id
+        self.declare_parameter('thymio_id', rclpy.Parameter.Type.INTEGER)
+        self.target_id = self.get_parameter_or('thymio_id', None).get_parameter_value().integer_value
 
+    t = None
     v = None
     def init(self):
         self.bridge = CvBridge()
@@ -66,6 +68,8 @@ class FollowThymio(State):
         self.ctg_angular_sub = self.create_subscription(Quaternion, 'ctg_angular', self.ctg_angular_callback, 10)
         self.roll_linear, self.roll_angular = [], []
         self.ctg_linear, self.ctg_angular = None, None
+        self.gap = ActionClient(self, GripperControl, 'gripper')
+        self.gap.wait_for_server()
         
     def timer_callback(self):
         if self.v is None: return
@@ -73,19 +77,19 @@ class FollowThymio(State):
         tvec, theta = self.v
         # Proportional controller
         #               P
-        x  = tvec[2] *  0.1
+        x  = tvec[2] *  0.4
         y  = tvec[0] * -0.4
-        z  = tvec[1] * -0.1
-        tz = theta   * -0.2
+        z  = tvec[1] * -0.4
+        tz = theta   * -0.4
         if self.seen is not None and self.seen + 0.5 > t:
             self.move(x=x, y=y, z=z, tz=tz)
         else:
             alpha = np.interp(t, [self.seen, self.seen+3], [1, 0])
             beta = 1-alpha
             self.move(
-                x=alpha*x + beta*-0.2,
+                x=alpha*x,
                 y=alpha*y,
-                z=alpha*z + beta*-0.1,
+                z=alpha*z,
                 tz=alpha*tz
             )
     
@@ -104,7 +108,7 @@ class FollowThymio(State):
             tvec = tvecs[idx][0]
 
             P = mktransform(np.matrix(tvec), np.matrix(rvec))
-            T = mktransform(np.matrix([0., 0.03, 0.32]), np.matrix([0., 0., 0.]))
+            T = mktransform(np.matrix([0., 0.08, 0.5]), np.matrix([0., 0., 0.]))
             M = P @ T
             # self.get_logger().info(f"{self.ctg_linear}, {self.ctg_angular}")
             if self.ctg_linear is not None and self.ctg_angular is not None:
@@ -115,22 +119,33 @@ class FollowThymio(State):
             ntvec = M[:3,3]
 
             theta = nrvec[2]
+
+            ntvec[1] = ntvec[1] if ntvec[1] > -0.05 else -0.05
+            
             self.v = (ntvec, theta)
 
             self.roll_linear.append(ntvec)
             self.roll_angular.append(theta)
-            # self.roll_linear = self.roll_linear[len(roll_linear)]
-            # nrvec = self
             speed = (np.abs(ntvec).sum() + abs(theta)) / 4
 
-
-
             self.aruco.draw_pose(img, nrvec, ntvec)
-            if speed < 0.01:
-                speed=0.0
-                # self.switch_state(MoveForward())
+            
+            if speed < 0.1:
+                self.t = time.time() if self.t is None else self.t
+                if time.time() > 3 + self.t:
+                    self.release()
+                    self.switch_state(None)
+            else:
+                self.t = None
+        else:
+            self.t = None
+            
             
         self.image_pub.publish(msg)
+
+    def release(self):
+        self.gap.send_goal_async(GripperControl.Goal(target_state=GripperState.OPEN))
+        time.sleep(1.)
 
     def ctg_linear_callback(self, msg: Vector3):
         # self.get_logger().info(f"{msg}")

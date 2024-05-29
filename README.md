@@ -19,14 +19,16 @@ cd ~/dev_ws
 colcon build --packages-select project
 
 source install/setup.bash
-<!-- ```
+```
 Calibrate the camera matrix, pose and distorsion with the calibration node, which must run inside the provided calibration scene:
 ```
 ros2 launch project calibrate.launch.xml
+Calibrate the camera matrix, pose and distorsion with the calibration node, which must run inside the provided calibration scene:
+```
 ``` 
-Wait until the confirmation message and terminate with Ctrl+C.-->
+Wait until the confirmation message and terminate with Ctrl+C.
 
 Launch the main node:
 ```
-ros2 launch project vs.launch.xml
+ros2 launch project vs.launch.xml target_id:="56"
 ```

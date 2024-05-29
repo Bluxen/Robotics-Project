@@ -6,15 +6,17 @@
   <arg name="name_th" default="thymio_0"/>
   <arg name="device" default="tcp:host=localhost;port=33333"/>
   <arg name="simulation" default="True"/>
+  <arg name="target_id" default="55"/>
+  <arg name="thymio_id" default="74"/>
 
-  <!-- <group scoped="true">
+  <group scoped="true">
     <include file="$(find-pkg-share thymioid)/launch/main.launch">
       <arg name="name" value="$(var name_th)"/>
       <arg name="device" value="$(var device)"/>
       <arg name="simulation" value="$(var simulation)"/>
     </include>
   </group>
-   -->
+  
   <group scoped="true">
     <include file="$(find-pkg-share robomaster_ros)/launch/ep.launch">
       <arg name="name" value="$(var name_rm)"/>
@@ -24,5 +26,8 @@
     </include>
   </group>
 
-  <node pkg="project" exec="vs" namespace="$(var name_rm)" output='screen' />
+  <node pkg="project" exec="vs" namespace="$(var name_rm)" output='screen'>
+    <param name="target_id" value="$(var target_id)"/>
+    <param name="thymio_id" value="$(var thymio_id)"/>
+  </node>
 </launch>

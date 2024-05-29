@@ -1,4 +1,5 @@
 import rclpy
+from rclpy.node import Parameter, get_default_context
 import sys
 import os
 from .state_align import Align
@@ -8,7 +9,7 @@ def main():
     rclpy.init(args = sys.argv)
     os.environ["XDG_SESSION_TYPE"] = "xcb"
 
-    state = Align(55)
+    state = Align()
 
     while state is not None:
         node = state

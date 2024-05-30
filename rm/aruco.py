@@ -5,13 +5,14 @@ import numpy as np
 from .calibration_data import load_calibration
 
 class Aruco:
+    optimal_calibration = None
     def __init__(self, dictionary_to_use=aruco.DICT_ARUCO_ORIGINAL, size=0.05, logger=None) -> None:
         self.logger = logger
         self.dictionary=aruco.getPredefinedDictionary(dictionary_to_use)
         self.parameters = aruco.DetectorParameters()
         self.detector = aruco.ArucoDetector(self.dictionary, self.parameters)
         self.size = size
-        self.data = load_calibration()
+        self.data = load_calibration(Aruco.optimal_calibration)
 
     def get_aruco_poses(self,corners):
         rvecs, tvecs, objp = aruco.estimatePoseSingleMarkers(corners, self.size, self.data.mtx, self.data.dist)

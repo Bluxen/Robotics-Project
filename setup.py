@@ -23,7 +23,6 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'firstController = project.firstController:main',
             'calibrate = project.calibrate:main',
             'vs = rm.main:main'
         ],

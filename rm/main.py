@@ -4,11 +4,11 @@ import sys
 import os
 from .state_align import Align
 from .state_move_forward import MoveForward
+from .state_follow_thymio import FollowThymio
 
 def main():
     rclpy.init(args = sys.argv)
     os.environ["XDG_SESSION_TYPE"] = "xcb"
-
     state = Align()
 
     while state is not None:

@@ -3,6 +3,8 @@ from asyncio import Future
 
 from geometry_msgs.msg import Twist, Vector3, PointStamped
 from sensor_msgs.msg import Image
+from .aruco import Aruco
+import rclpy
 
 from abc import abstractmethod
 
@@ -16,6 +18,12 @@ class State(Node):
         self.arm_x = 1.
         self.get_logger().info("State initialized")
         self.done = Future()
+
+        # Set calibration type if this is the first state
+        if Aruco.optimal_calibration is None:
+            self.declare_parameter('use_calibration', rclpy.Parameter.Type.BOOL)
+            Aruco.optimal_calibration = not self.get_parameter_or('use_calibration', None).get_parameter_value().bool_value
+            self.get_logger().info(f"Using camera type: {'optimal' if Aruco.optimal_calibration else 'calibration'}")
 
     def switch_state(self, state):
         self.done.set_result(state)

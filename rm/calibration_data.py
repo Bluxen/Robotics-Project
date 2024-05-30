@@ -10,7 +10,7 @@ SHARE = get_package_share_directory('project')+'/'
 class CalibrationData:
     mtx     = None
     dist    = None
-    size    = (640, 360)    # Image size in pixels (TODO currently hardcoded to (640, 360))
+    size    = (640, 360)    # Image size in pixels
     _f      = None          # Focal length
     _fovx   = None          # FOV x in degrees
     _fovy   = None          # FOV y in degrees
@@ -58,9 +58,12 @@ class OptimalCalibrationData(CalibrationData):
     ], dtype=float)
 
 CALIBRATION_DATA_FILE = SHARE + 'calibration_data.pickle'
-def load_calibration():
-    # data = CalibrationData()
-    data = OptimalCalibrationData()
-    # with open(CALIBRATION_DATA_FILE, 'rb') as f:
-    #     data.mtx, data.dist, _, _ = pickle.load(f)
-    return data
+def load_calibration(optimal = True):
+    if optimal:
+        data = OptimalCalibrationData()
+        return data
+    else:
+        data = CalibrationData()
+        with open(CALIBRATION_DATA_FILE, 'rb') as f:
+            data.mtx, data.dist, _, _ = pickle.load(f)
+        return data

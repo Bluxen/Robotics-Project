@@ -8,6 +8,7 @@
   <arg name="simulation" default="True"/>
   <arg name="target_id" default="55"/>
   <arg name="thymio_id" default="74"/>
+  <arg name="use_calibration" default="False"/>
 
   <group scoped="true">
     <include file="$(find-pkg-share thymioid)/launch/main.launch">
@@ -29,5 +30,6 @@
   <node pkg="project" exec="vs" namespace="$(var name_rm)" output='screen'>
     <param name="target_id" value="$(var target_id)"/>
     <param name="thymio_id" value="$(var thymio_id)"/>
+    <param name="use_calibration" value="$(var use_calibration)"/>
   </node>
 </launch>

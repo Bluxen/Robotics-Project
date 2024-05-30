@@ -48,7 +48,7 @@ class MoveForward(State):
         if self.initial_position is None:
             self.initial_position = position
         self.move(x=-0.1)
-        if distance(self.initial_position, position) >= 0.3:
+        if distance(self.initial_position, position) >= 0.25:
             self.grab()
             self.gap.destroy()
             self.switch_state(FollowThymio())

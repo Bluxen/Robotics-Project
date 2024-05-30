@@ -59,8 +59,8 @@ class Align(State):
         self.declare_parameter('target_id', rclpy.Parameter.Type.INTEGER)
         self.target_id = self.get_parameter_or('target_id', None).get_parameter_value().integer_value
 
-    v = None
     def init(self):
+        self.v = None
         self.bridge = CvBridge()
         self.aruco = Aruco(logger=self.get_logger())
         self.timer = self.create_timer(1/60, self.timer_callback)
@@ -96,7 +96,10 @@ class Align(State):
         
         corners, ids, rejected_img_points = self.aruco.detect(img)
 
-        if ids is not None and self.target_id in ids:
+        if ids is None: return
+        rvecs, tvecs, objp = self.aruco.get_aruco_poses(corners)
+        img = self.aruco.draw_markers(img, corners, ids, rvecs, tvecs)
+        if self.target_id in ids:
             self.seen = time.time()
             rvecs, tvecs, objp = self.aruco.get_aruco_poses(corners)
 

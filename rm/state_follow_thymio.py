@@ -15,6 +15,7 @@ import cv2
 import os
 from .aruco import Aruco
 from .state import State
+from numpy import pi
 
 
 from cv_bridge import CvBridge
@@ -57,9 +58,9 @@ class FollowThymio(State):
         self.declare_parameter('thymio_id', rclpy.Parameter.Type.INTEGER)
         self.target_id = self.get_parameter_or('thymio_id', None).get_parameter_value().integer_value
 
-    t = None
-    v = None
     def init(self):
+        self.t = None
+        self.v = None
         self.bridge = CvBridge()
         self.aruco = Aruco(logger=self.get_logger())
         self.timer = self.create_timer(1/60, self.timer_callback)
@@ -98,17 +99,22 @@ class FollowThymio(State):
         
         corners, ids, rejected_img_points = self.aruco.detect(img)
 
-        if ids is not None and self.target_id in ids:
+        if ids is None: return
+        rvecs, tvecs, objp = self.aruco.get_aruco_poses(corners)
+        img = self.aruco.draw_markers(img, corners, ids, rvecs, tvecs)
+        if self.target_id in ids:
             self.seen = time.time()
-            rvecs, tvecs, objp = self.aruco.get_aruco_poses(corners)
-            img = self.aruco.draw_markers(img, corners, ids, rvecs, tvecs)
             
             idx = ids.tolist().index([self.target_id])
             rvec = rvecs[idx][0]
             tvec = tvecs[idx][0]
 
+            self.get_logger().info(f"{rvec}")
+            rvec[1] = 0.
+            rvec[0] = pi if rvec[0] > 2. else rvec[0]
+
             P = mktransform(np.matrix(tvec), np.matrix(rvec))
-            T = mktransform(np.matrix([0., 0.08, 0.5]), np.matrix([0., 0., 0.]))
+            T = mktransform(np.matrix([0., 0.08, 0.8]), np.matrix([0., 0., 0.]))
             M = P @ T
             # self.get_logger().info(f"{self.ctg_linear}, {self.ctg_angular}")
             if self.ctg_linear is not None and self.ctg_angular is not None:

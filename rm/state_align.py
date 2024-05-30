@@ -58,6 +58,8 @@ class Align(State):
         super().__init__()
         self.declare_parameter('target_id', rclpy.Parameter.Type.INTEGER)
         self.target_id = self.get_parameter_or('target_id', None).get_parameter_value().integer_value
+        self.declare_parameter('offset', rclpy.Parameter.Type.DOUBLE)
+        self.offset = self.get_parameter_or('offset', None).get_parameter_value().double_value
 
     def init(self):
         self.v = None
@@ -65,6 +67,7 @@ class Align(State):
         self.aruco = Aruco(logger=self.get_logger())
         self.timer = self.create_timer(1/60, self.timer_callback)
         self.image_sub = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
+        self.ctg_linear, self.ctg_angular = None, None
         self.ctg_linear_sub  = self.create_subscription(Vector3,    'ctg_linear',  self.ctg_linear_callback, 10)
         self.ctg_angular_sub = self.create_subscription(Quaternion, 'ctg_angular', self.ctg_angular_callback, 10)
         self.roll_linear, self.roll_angular = [], []
@@ -110,14 +113,12 @@ class Align(State):
             tvec = tvecs[idx][0]
             self.aruco.draw_pose(img, rvec, tvec)
 
-            
-            self.get_logger().info(f"{rvec}")
             # self.aruco.draw_pose(img, rvec, tvec)
             rvec[1] = 0.
             rvec[0] = pi if rvec[0] > 2. else rvec[0]
 
             P = mktransform(np.matrix(tvec), np.matrix(rvec))
-            T = mktransform(np.matrix([0., 0.05, 0.32]), np.matrix([0., 0., 0.]))
+            T = mktransform(np.matrix([0., 0.05, 0.32 + self.offset]), np.matrix([0., 0., 0.]))
             M = P @ T
             # self.get_logger().info(f"{self.ctg_linear}, {self.ctg_angular}")
             nrvec, _ = cv2.Rodrigues(M[:3,:3])

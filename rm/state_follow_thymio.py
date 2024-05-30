@@ -65,10 +65,10 @@ class FollowThymio(State):
         self.aruco = Aruco(logger=self.get_logger())
         self.timer = self.create_timer(1/60, self.timer_callback)
         self.image_sub = self.create_subscription(Image, 'camera/image_color', self.img_callback, 10)
+        self.ctg_linear, self.ctg_angular = None, None
         self.ctg_linear_sub  = self.create_subscription(Vector3,    'ctg_linear',  self.ctg_linear_callback, 10)
         self.ctg_angular_sub = self.create_subscription(Quaternion, 'ctg_angular', self.ctg_angular_callback, 10)
         self.roll_linear, self.roll_angular = [], []
-        self.ctg_linear, self.ctg_angular = None, None
         self.gap = ActionClient(self, GripperControl, 'gripper')
         self.gap.wait_for_server()
         
@@ -109,7 +109,6 @@ class FollowThymio(State):
             rvec = rvecs[idx][0]
             tvec = tvecs[idx][0]
 
-            self.get_logger().info(f"{rvec}")
             rvec[1] = 0.
             rvec[0] = pi if rvec[0] > 2. else rvec[0]
 

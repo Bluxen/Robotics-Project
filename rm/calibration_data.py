@@ -22,7 +22,7 @@ class CalibrationData:
             cv2.calibrationMatrixValues(
             self.mtx,           # Camera matrix
             self.size,          # Image size in pixels
-            3.70, 2.60    # Aperture size in m
+            3.70, 2.60          # Aperture size
             )
 
     @property
@@ -66,4 +66,5 @@ def load_calibration(optimal = True):
         data = CalibrationData()
         with open(CALIBRATION_DATA_FILE, 'rb') as f:
             data.mtx, data.dist, _, _ = pickle.load(f)
+        data._setMtxValues()
         return data
